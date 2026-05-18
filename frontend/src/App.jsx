@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react'
 
-export default function App() {
-  const [status, setStatus] = useState('checking...')
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Login";
 
-  useEffect(() => {
-    fetch('/api/health')
-      .then((r) => r.json())
-      .then((d) => setStatus(d.status))
-      .catch(() => setStatus('unreachable'))
-  }, [])
+function App() {
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/login" element={<Login />} />
 
-  return (
-    <div>
-      <h1>IIS App</h1>
-      <p>API status: {status}</p>
-    </div>
-  )
+                <Route path="/admin" element={<h1>Admin page</h1>} />
+                <Route path="/manager" element={<h1>Manager page</h1>} />
+                <Route path="/team-member" element={<h1>Team member page</h1>} />
+            </Routes>
+        </BrowserRouter>
+    );
 }
+
+export default App;
