@@ -26,15 +26,37 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("projects", JSON.stringify(data.projects));
 
-        const firstProject = data.projects[0];
+        const selectedProject = data.projects.find(
+            (project) => project.role_name === "PROJECT_MANAGER"
+        );
 
-        if (firstProject.role_name.toLowerCase() === "admin") {
-            window.location.href = "/admin";
-        } else if (firstProject.role_name.toLowerCase() === "manager") {
+        if (selectedProject) {
+            localStorage.setItem("selectedProject", JSON.stringify(selectedProject));
             window.location.href = "/manager";
-        } else {
-            window.location.href = "/team-member";
+            return;
         }
+
+        const adminProject = data.projects.find(
+            (project) => project.role_name === "ADMIN"
+        );
+
+        if (adminProject) {
+            localStorage.setItem("selectedProject", JSON.stringify(adminProject));
+            window.location.href = "/admin";
+            return;
+        }
+
+        const teamMemberProject = data.projects.find(
+            (project) => project.role_name === "TEAM_MEMBER"
+        );
+
+        if (teamMemberProject) {
+            localStorage.setItem("selectedProject", JSON.stringify(teamMemberProject));
+            window.location.href = "/team-member";
+            return;
+        }
+
+        alert("User does not have a valid role.");
     }
 
     return (
