@@ -32,7 +32,7 @@ export default function Login() {
 
         if (selectedProject) {
             localStorage.setItem("selectedProject", JSON.stringify(selectedProject));
-            window.location.href = "/manager";
+            window.location.href = "/projects";
             return;
         }
 
@@ -42,7 +42,7 @@ export default function Login() {
 
         if (adminProject) {
             localStorage.setItem("selectedProject", JSON.stringify(adminProject));
-            window.location.href = "/admin";
+            window.location.href = "/projects";
             return;
         }
 
@@ -52,7 +52,7 @@ export default function Login() {
 
         if (teamMemberProject) {
             localStorage.setItem("selectedProject", JSON.stringify(teamMemberProject));
-            window.location.href = "/team-member";
+            window.location.href = "/projects";
             return;
         }
 
