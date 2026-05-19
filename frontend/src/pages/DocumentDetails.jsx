@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./DocumentDetails.css";
-
+import documentIcon from "../assets/document-icon.png";
 
 export default function DocumentDetails() {
     const { documentId } = useParams();
@@ -41,7 +41,17 @@ export default function DocumentDetails() {
                 </aside>
 
                 <main className="document-preview">
-                    <h1>{document.name}</h1>
+                    <div className="document-title-row">
+                        <img src={documentIcon} alt="Document icon" className="document-title-icon" />
+                        <h1>{document.name}</h1>
+                    </div>
+                    <div className="document-tags">
+                        {(document.tags || []).map((tag) => (
+                            <span key={tag.name} className="document-tag">
+                                {tag.name}
+                            </span>
+                        ))}
+                    </div>
                     <div className="document-paper">
                         <iframe
                             src={`http://localhost:8000/documents/${documentId}/file`}
