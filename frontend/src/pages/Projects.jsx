@@ -5,12 +5,14 @@ export default function Projects() {
     const [projects, setProjects] = useState([]);
     const [documentsByProject, setDocumentsByProject] = useState({});
     const [openedProjectId, setOpenedProjectId] = useState(null);
+    const [user, setUser] = useState(null);
     const [selectedProject, setSelectedProject] = useState(null);
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem("user"));
+        const loggedUser = JSON.parse(localStorage.getItem("user"));
+        setUser(loggedUser);
 
-        fetch(`http://localhost:8000/projects/my?user_id=${user.user_id}`)
+        fetch(`http://localhost:8000/projects/my?user_id=${loggedUser.user_id}`)
             .then((response) => response.json())
             .then((data) => setProjects(data));
     }, []);
@@ -46,7 +48,9 @@ export default function Projects() {
         <div className="projects-page">
             <header className="projects-header">
                 <div className="projects-logo">DOCUMENT MANAGEMENT</div>
-                <div className="user-avatar">N</div>
+                <div className="user-avatar">
+                    {user?.name?.charAt(0).toUpperCase()}
+                </div>
             </header>
 
             <div className="projects-layout">
