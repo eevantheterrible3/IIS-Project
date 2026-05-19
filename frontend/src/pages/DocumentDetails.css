@@ -1,0 +1,141 @@
+.document-details-page {
+    min-height: 100vh;
+    background: #f5f5f5;
+    font-family: Arial, sans-serif;
+}
+
+.document-header {
+    height: 56px;
+    background: white;
+    border-bottom: 1px solid #dcdcdc;
+    display: flex;
+    align-items: center;
+    padding: 0 26px;
+}
+
+.document-logo {
+    font-size: 22px;
+    font-weight: 600;
+    color: #0b1f4d;
+}
+
+.document-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    min-height: calc(100vh - 56px);
+}
+
+.document-left-panel,
+.metadata-panel {
+    background: white;
+    padding: 32px 24px;
+    border-right: 1px solid #ddd;
+}
+
+.metadata-panel {
+    border-right: none;
+    border-left: 1px solid #ddd;
+}
+
+.document-left-panel h2 {
+    color: #0b1f4d;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.tag-item {
+    background: #e8eefc;
+    color: #0b1f4d;
+    padding: 6px 10px;
+    border-radius: 14px;
+    font-size: 13px;
+}
+
+.document-preview {
+    padding: 40px;
+}
+
+    .document-preview h1 {
+        color: #0b1f4d;
+        font-size: 28px;
+        margin-bottom: 24px;
+    }
+
+.document-paper {
+    background: white;
+    min-height: 650px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 40px;
+}
+
+.metadata-panel h3 {
+    color: #0b1f4d;
+    margin-bottom: 20px;
+}
+
+.metadata-item {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+    .metadata-item strong {
+        font-size: 14px;
+        color: #888;
+        font-weight: normal;
+    }
+
+    .metadata-item span {
+        font-size: 15px;
+        color: #000;
+        font-weight: normal;
+        margin-left: 20px;
+    }
+
+.document-frame {
+    width: 100%;
+    height: 750px;
+    border: none;
+}
+.details-sidebar-title {
+    font-size: 21px;
+    font-weight: 500;
+    margin-bottom: 34px;
+}
+
+.details-project-open {
+    margin-left: 34px;
+}
+
+.details-project-name {
+    font-size: 21px;
+    margin-bottom: 26px;
+}
+
+.details-documents-title {
+    font-size: 20px;
+    margin-left: 34px;
+    margin-bottom: 22px;
+}
+
+.details-document-selected {
+    margin-left: 68px;
+    margin-bottom: 20px;
+    font-size: 18px;
+    color: #2d27b8;
+}
+
+.details-permissions {
+    margin-left: 34px;
+    font-size: 19px;
+    margin-top: 30px;
+}

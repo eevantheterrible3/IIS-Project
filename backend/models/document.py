@@ -13,8 +13,10 @@ class Document(Base):
     project_id = Column(Integer, ForeignKey("projects.project_id"), nullable=False)
 
     name = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=True)
     user_prompt = Column(Text)
     status = Column(String(50), nullable=False, default="draft")
+
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())

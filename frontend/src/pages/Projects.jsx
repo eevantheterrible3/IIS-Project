@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import "./Projects.css";
+import { useNavigate } from "react-router-dom";
 
 export default function Projects() {
     const [projects, setProjects] = useState([]);
@@ -8,6 +9,8 @@ export default function Projects() {
     const [user, setUser] = useState(null);
     const [selectedProject, setSelectedProject] = useState(null);
     const [showMenu, setShowMenu] = useState(false);
+    const navigate = useNavigate();
+
 
     useEffect(() => {
         const loggedUser = JSON.parse(localStorage.getItem("user"));
@@ -98,6 +101,7 @@ export default function Projects() {
                                         <div
                                             key={document.document_id}
                                             className="document-item"
+                                            onClick={() => navigate(`/documents/${document.document_id}`)}
                                         >
                                             {document.name}
                                         </div>
