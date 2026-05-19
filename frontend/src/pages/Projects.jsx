@@ -7,6 +7,7 @@ export default function Projects() {
     const [openedProjectId, setOpenedProjectId] = useState(null);
     const [user, setUser] = useState(null);
     const [selectedProject, setSelectedProject] = useState(null);
+    const [showMenu, setShowMenu] = useState(false);
 
     useEffect(() => {
         const loggedUser = JSON.parse(localStorage.getItem("user"));
@@ -48,8 +49,30 @@ export default function Projects() {
         <div className="projects-page">
             <header className="projects-header">
                 <div className="projects-logo">DOCUMENT MANAGEMENT</div>
-                <div className="user-avatar">
-                    {user?.name?.charAt(0).toUpperCase()}
+                <div className="user-menu-container">
+                    <div
+                        className="user-avatar"
+                        onClick={() => setShowMenu(!showMenu)}
+                    >
+                        {user?.name?.charAt(0).toUpperCase()}
+                    </div>
+
+                    {showMenu && (
+                        <div className="user-dropdown">
+                            <button
+                                className="logout-button"
+                                onClick={() => {
+                                    localStorage.removeItem("user");
+                                    localStorage.removeItem("projects");
+                                    localStorage.removeItem("selectedProject");
+
+                                    window.location.href = "/login";
+                                }}
+                            >
+                                Log out
+                            </button>
+                        </div>
+                    )}
                 </div>
             </header>
 

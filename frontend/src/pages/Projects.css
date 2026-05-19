@@ -118,3 +118,44 @@
 .status-text.finished {
 	color: red;
 }
+.user-menu-container {
+	position: relative;
+}
+
+.user-avatar {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	background: #b7e6c2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: white;
+	font-weight: bold;
+	cursor: pointer;
+}
+
+.user-dropdown {
+	position: absolute;
+	top: 45px;
+	right: 0;
+	background: white;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 8px;
+	min-width: 120px;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.logout-button {
+	width: 100%;
+	border: none;
+	background: none;
+	cursor: pointer;
+	padding: 8px;
+	font-size: 14px;
+}
+
+	.logout-button:hover {
+		background: #f5f5f5;
+	}
