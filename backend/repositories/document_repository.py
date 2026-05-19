@@ -1,7 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.orm import selectinload
 from models.document import Document
+from models.is_marked import IsMarked
+from models.tag import Tag
 
 
 class DocumentRepository:
@@ -13,3 +15,17 @@ class DocumentRepository:
             select(Document).where(Document.project_id == project_id)
         )
         return result.scalars().all()
+
+    async def get_document_details(self, document_id: int):
+        result = await self.db.execute(
+            select(Document)
+            .where(Document.document_id == document_id)
+            .options(
+                selectinload(Document.user),
+                selectinload(Document.project),
+                selectinload(Document.metadata_items),
+                selectinload(Document.tags).selectinload(IsMarked.tag)
+            )
+        )
+
+        return result.scalar_one_or_none()
