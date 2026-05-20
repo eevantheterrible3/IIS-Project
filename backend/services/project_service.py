@@ -36,7 +36,17 @@ class ProjectService:
             )
             for work in works
         ]
-    async def delete_project(self, project_id: int):
+    async def ensure_user_is_admin(self, user_id: int):
+        is_admin = await self.project_repository.is_user_admin(user_id)
+
+        if not is_admin:
+            raise HTTPException(
+                status_code=403,
+                detail="Only administrators can manage projects"
+            )
+    async def delete_project(self, project_id: int, user_id: int):
+        await self.ensure_user_is_admin(user_id)
+
         project = await self.project_repository.get_project_by_id(project_id)
 
         if project is None:
@@ -46,7 +56,9 @@ class ProjectService:
 
         return {"message": "Project deleted successfully"}
 
-    async def create_project(self, request):
+    async def create_project(self, request, user_id: int):
+        await self.ensure_user_is_admin(user_id)
+
         project = Project(
             name=request.name,
             description=request.description,
@@ -57,7 +69,9 @@ class ProjectService:
 
         return await self.project_repository.create_project(project)
 
-    async def update_project(self, project_id: int, request):
+    async def update_project(self, project_id: int, request, user_id: int):
+        await self.ensure_user_is_admin(user_id)
+
         project = await self.project_repository.get_project_by_id(project_id)
 
         if project is None:

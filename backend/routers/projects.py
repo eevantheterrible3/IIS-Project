@@ -39,28 +39,31 @@ async def get_project_documents(
 @router.delete("/{project_id}")
 async def delete_project(
     project_id: int,
+    user_id: int,
     db: AsyncSession = Depends(get_db)
 ):
     project_repository = ProjectRepository(db)
     project_service = ProjectService(project_repository)
 
-    return await project_service.delete_project(project_id)
+    return await project_service.delete_project(project_id, user_id)
 @router.post("")
 async def create_project(
     request: ProjectCreateRequest,
+    user_id: int,
     db: AsyncSession = Depends(get_db)
 ):
     project_repository = ProjectRepository(db)
     project_service = ProjectService(project_repository)
 
-    return await project_service.create_project(request)
+    return await project_service.create_project(request, user_id)
 @router.put("/{project_id}")
 async def update_project(
     project_id: int,
     request: ProjectUpdateRequest,
+    user_id: int,
     db: AsyncSession = Depends(get_db)
 ):
     project_repository = ProjectRepository(db)
     project_service = ProjectService(project_repository)
 
-    return await project_service.update_project(project_id, request)
+    return await project_service.update_project(project_id, request, user_id)

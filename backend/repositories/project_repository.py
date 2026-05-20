@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from models.project import Project
 from models.work import Work
+from models.role import Role
 
 
 class ProjectRepository:
@@ -30,6 +31,18 @@ class ProjectRepository:
             select(Project).where(Project.project_id == project_id)
         )
         return result.scalar_one_or_none()
+
+    async def is_user_admin(self, user_id: int) -> bool:
+        result = await self.db.execute(
+            select(Work)
+            .join(Role, Work.role_id == Role.role_id)
+            .where(
+                Work.user_id == user_id,
+                Role.name == "ADMIN"
+            )
+        )
+
+        return result.scalar_one_or_none() is not None
 
     async def delete_project(self, project: Project):
         await self.db.delete(project)
