@@ -61,12 +61,16 @@ export default function Projects() {
             }));
         }
     }
+    function isAdmin() {
+        return projects.some((project) => project.role === "ADMIN");
+    }
     function formatRole(role) {
         return role?.toLowerCase().replaceAll("_", " ");
     }
     async function handleDeleteProject() {
+        const user = JSON.parse(localStorage.getItem("user"));
         const response = await fetch(
-            `http://localhost:8000/projects/${selectedProject.project_id}`,
+            `http://localhost:8000/projects/${selectedProject.project_id}?user_id=${user.user_id}`,
             {
                 method: "DELETE",
             }
@@ -86,7 +90,9 @@ export default function Projects() {
         setShowDeleteProjectModal(false);
     }
     async function handleCreateProject(projectData) {
-        const response = await fetch("http://localhost:8000/projects", {
+        const user = JSON.parse(localStorage.getItem("user"));
+
+        const response = await fetch(`http://localhost:8000/projects?user_id=${user.user_id}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -107,8 +113,9 @@ export default function Projects() {
         setShowAddProjectModal(false);
     }
     async function handleUpdateProject(projectData) {
+        const user = JSON.parse(localStorage.getItem("user"));
         const response = await fetch(
-            `http://localhost:8000/projects/${selectedProject.project_id}`,
+            `http://localhost:8000/projects/${selectedProject.project_id}?user_id=${user.user_id}`,
             {
                 method: "PUT",
                 headers: {
@@ -215,21 +222,23 @@ export default function Projects() {
                                     {selectedProject.name} - {formatRole(selectedProject.role)}
                                 </h1>
 
-                                <div className="project-actions">
-                                    <button
-                                        className="project-edit-button"
-                                        onClick={() => setShowEditProjectModal(true)}
-                                    >
-                                        Edit
-                                    </button>
+                                {isAdmin() && (
+                                    <div className="project-actions">
+                                        <button
+                                            className="project-edit-button"
+                                            onClick={() => setShowEditProjectModal(true)}
+                                        >
+                                            Edit
+                                        </button>
 
-                                    <button
-                                        className="project-delete-button"
-                                        onClick={() => setShowDeleteProjectModal(true)}
-                                    >
-                                        Delete
-                                    </button>
-                                </div>
+                                        <button
+                                            className="project-delete-button"
+                                            onClick={() => setShowDeleteProjectModal(true)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <p className="project-description">
@@ -247,12 +256,14 @@ export default function Projects() {
                         <div className="empty-project-state">
                             <h1>Select a project</h1>
 
-                                <button
-                                    className="project-add-button"
-                                    onClick={() => setShowAddProjectModal(true)}
-                                >
-                                    + Add project
-                                </button>
+                                {isAdmin() && (
+                                    <button
+                                        className="project-add-button"
+                                        onClick={() => setShowAddProjectModal(true)}
+                                    >
+                                        + Add project
+                                    </button>
+                                )}
                         </div>
                     )}
                 </main>
