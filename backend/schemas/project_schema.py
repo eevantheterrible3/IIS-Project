@@ -12,3 +12,6 @@ class ProjectCreateRequest(BaseModel):
     name: str
     description: Optional[str] = None
     status: str = "ACTIVE"
+class ProjectUpdateRequest(BaseModel):
+    name: str
+    description: Optional[str] = None

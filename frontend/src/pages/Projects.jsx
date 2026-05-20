@@ -14,6 +14,7 @@ export default function Projects() {
     const location = useLocation();
     const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
     const [showAddProjectModal, setShowAddProjectModal] = useState(false);
+    const [showEditProjectModal, setShowEditProjectModal] = useState(false);
 
     useEffect(() => {
         const loggedUser = JSON.parse(localStorage.getItem("user"));
@@ -105,6 +106,35 @@ export default function Projects() {
         setOpenedProjectId(createdProject.project_id);
         setShowAddProjectModal(false);
     }
+    async function handleUpdateProject(projectData) {
+        const response = await fetch(
+            `http://localhost:8000/projects/${selectedProject.project_id}`,
+            {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(projectData),
+            }
+        );
+
+        if (!response.ok) {
+            alert("Failed to update project.");
+            return;
+        }
+
+        const updatedProject = await response.json();
+
+        setProjects(projects.map((project) =>
+            project.project_id === updatedProject.project_id
+                ? updatedProject
+                : project
+        ));
+
+        setSelectedProject(updatedProject);
+        setShowEditProjectModal(false);
+    }
+
     return (
         <div className="projects-page">
             <header className="projects-header">
@@ -186,7 +216,10 @@ export default function Projects() {
                                 </h1>
 
                                 <div className="project-actions">
-                                    <button className="project-edit-button">
+                                    <button
+                                        className="project-edit-button"
+                                        onClick={() => setShowEditProjectModal(true)}
+                                    >
                                         Edit
                                     </button>
 
@@ -255,6 +288,15 @@ export default function Projects() {
                     onSave={handleCreateProject}
                 />
             )}
+            {showEditProjectModal && (
+                <ProjectFormModal
+                    title="Edit project"
+                    project={selectedProject}
+                    onClose={() => setShowEditProjectModal(false)}
+                    onSave={handleUpdateProject}
+                />
+            )}
         </div>
+
     );
 }
