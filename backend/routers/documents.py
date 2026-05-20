@@ -7,6 +7,7 @@ from services.document_service import DocumentService
 from schemas.document_detail_schema import DocumentDetailResponse
 from fastapi.responses import FileResponse
 from pathlib import Path
+from fastapi import APIRouter, Depends, HTTPException
 
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -44,3 +45,13 @@ async def get_document_file(
             "Content-Disposition": "inline"
         }
     )
+
+@router.delete("/delete/{document_id}")
+async def delete_document(
+    document_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    document_repository = DocumentRepository(db)
+    document_service = DocumentService(document_repository)
+
+    return await document_service.delete_document(document_id)

@@ -1,11 +1,14 @@
 ﻿import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import "./DocumentDetails.css";
 import documentIcon from "../assets/document-icon.png";
-
+import editIcon from "../assets/edit.png";
+import deleteIcon from "../assets/delete.png";
+import { useNavigate, useParams } from "react-router-dom";
 export default function DocumentDetails() {
     const { documentId } = useParams();
     const [document, setDocument] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetch(`http://localhost:8000/documents/${documentId}`)
@@ -15,6 +18,18 @@ export default function DocumentDetails() {
 
     if (!document) {
         return <div className="document-details-page">Loading...</div>;
+    }
+    async function handleDelete() {
+        const response = await fetch(`http://localhost:8000/documents/delete/${documentId}`, {
+            method: "DELETE",
+        });
+
+        if (!response.ok) {
+            alert("Failed to delete document.");
+            return;
+        }
+
+        navigate("/projects");
     }
 
     return (
@@ -42,8 +57,25 @@ export default function DocumentDetails() {
 
                 <main className="document-preview">
                     <div className="document-title-row">
-                        <img src={documentIcon} alt="Document icon" className="document-title-icon" />
-                        <h1>{document.name}</h1>
+                        <div className="document-title-left">
+                            <img src={documentIcon} alt="Document icon" className="document-title-icon" />
+                            <h1>{document.name}</h1>
+                        </div>
+
+                        <div className="document-actions">
+                            <button className="document-action-button edit-button">
+                                <img src={editIcon} alt="Edit" />
+                                Edit
+                            </button>
+
+                            <button
+                                className="document-action-button delete-button"
+                                onClick={() => setShowDeleteModal(true)}
+                            >
+                                <img src={deleteIcon} alt="Delete" />
+                                Delete
+                            </button>
+                        </div>
                     </div>
                     <div className="document-tags">
                         {(document.tags || []).map((tag) => (
@@ -72,6 +104,30 @@ export default function DocumentDetails() {
                     ))}
                 </aside>
             </div>
+            {showDeleteModal && (
+                <div className="delete-modal-overlay">
+                    <div className="delete-modal">
+                        <h2>Delete document</h2>
+                        <p>Are you sure you want to delete this document?</p>
+
+                        <div className="delete-modal-actions">
+                            <button
+                                className="cancel-delete-button"
+                                onClick={() => setShowDeleteModal(false)}
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                className="confirm-delete-button"
+                                onClick={handleDelete}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
