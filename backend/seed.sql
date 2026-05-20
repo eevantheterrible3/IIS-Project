@@ -92,3 +92,53 @@ INSERT INTO activities (activity_id, document_id, user_id, type, date) VALUES
 (5, 3, 3, 'CREATE', NOW()),
 (6, 4, 1, 'CREATE', NOW()),
 (7, 5, 4, 'CREATE', NOW());
+UPDATE projects
+SET name = 'Summer Internship 2026',
+    description = 'Project for organizing summer internship applications.',
+    start_date = '2026-05-01',
+    end_date = '2026-08-01',
+    status = 'ACTIVE'
+WHERE project_id = 1;
+commit;
+UPDATE projects
+SET name = 'Employee Hiring Process',
+    description = 'Project for managing job applications and interviews.',
+    start_date = '2026-04-15',
+    end_date = '2026-09-01',
+    status = 'ACTIVE'
+WHERE project_id = 2;
+UPDATE documents
+SET name = 'Frontend Developer CV',
+    user_prompt = 'Frontend internship application',
+    file_path = 'uploads/documents/frontend_cv.pdf',
+    status = 'draft'
+WHERE document_id = 1;
+commit;
+UPDATE documents
+SET name = 'Interview Schedule',
+    user_prompt = 'Interview planning document',
+    file_path = 'uploads/documents/interview_schedule.pdf',
+    status = 'published'
+WHERE document_id = 2;
+commit;
+UPDATE documents
+SET name = 'Employment Contract',
+    user_prompt = 'Employee contract document',
+    file_path = 'uploads/documents/employment_contract.pdf',
+    status = 'published'
+WHERE document_id = 3;
+commit;
+UPDATE documents
+SET name = 'Website Specification',
+    user_prompt = 'Website redesign requirements',
+    file_path = 'uploads/documents/website_specification.pdf',
+    status = 'draft'
+WHERE document_id = 4;
+commit;
+UPDATE documents
+SET name = 'Laptop Invoice',
+    user_prompt = 'Office equipment purchase invoice',
+    file_path = 'uploads/documents/laptop_invoice.pdf',
+    status = 'published'
+WHERE document_id = 5;
+commit;

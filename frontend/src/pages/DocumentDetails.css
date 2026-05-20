@@ -1,0 +1,284 @@
+.document-details-page {
+    min-height: 100vh;
+    background: #f5f5f5;
+    font-family: Arial, sans-serif;
+}
+
+.document-header {
+    height: 56px;
+    background: white;
+    border-bottom: 1px solid #dcdcdc;
+    display: flex;
+    align-items: center;
+    padding: 0 26px;
+}
+
+.document-logo {
+    font-size: 22px;
+    font-weight: 600;
+    color: #0b1f4d;
+}
+
+.document-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 280px;
+    min-height: calc(100vh - 56px);
+}
+
+.document-left-panel,
+.metadata-panel {
+    background: white;
+    padding: 32px 24px;
+    border-right: 1px solid #ddd;
+}
+
+.metadata-panel {
+    border-right: none;
+    border-left: 1px solid #ddd;
+}
+
+.document-left-panel h2 {
+    color: #0b1f4d;
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.tag-item {
+    background: #e8eefc;
+    color: #0b1f4d;
+    padding: 6px 10px;
+    border-radius: 14px;
+    font-size: 13px;
+}
+
+.document-preview {
+    padding: 40px;
+}
+
+    .document-preview h1 {
+        color: #0b1f4d;
+        font-size: 28px;
+        margin-bottom: 24px;
+    }
+
+.document-paper {
+    background: white;
+    min-height: 650px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 40px;
+}
+
+.metadata-panel h3 {
+    color: #0b1f4d;
+    margin-bottom: 20px;
+}
+
+.metadata-item {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+    .metadata-item strong {
+        font-size: 14px;
+        color: #888;
+        font-weight: normal;
+    }
+
+    .metadata-item span {
+        font-size: 15px;
+        color: #000;
+        font-weight: normal;
+        margin-left: 20px;
+    }
+
+.document-frame {
+    width: 100%;
+    height: 750px;
+    border: none;
+}
+.details-sidebar-title {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 32px;
+}
+
+.details-project-open {
+    margin-left: 20px;
+}
+
+.details-project-name {
+    font-size: 14px;
+    margin-bottom: 14px;
+}
+
+.details-documents-title {
+    font-size: 14px;
+    margin-left: 24px;
+    margin-bottom: 14px;
+}
+
+.details-document-selected {
+    margin-left: 48px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #2d27b8;
+}
+
+.details-permissions {
+    margin-left: 24px;
+    font-size: 14px;
+    margin-top: 20px;
+}
+.document-tags {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.document-tag {
+    background: #9ff0b8;
+    color: #135c2b;
+    padding: 5px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+}
+.document-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.document-title-icon {
+    width: 38px;
+    height: 38px;
+}
+.document-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.document-title-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.document-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.document-action-button {
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+    .document-action-button img {
+        width: 18px;
+        height: 18px;
+    }
+
+.edit-button {
+    background-color: #2563eb;
+}
+
+.delete-button {
+    background-color: #dc2626;
+}
+.delete-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.delete-modal {
+    background: white;
+    padding: 24px;
+    border-radius: 10px;
+    width: 360px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+    .delete-modal h2 {
+        margin: 0 0 10px;
+    }
+
+    .delete-modal p {
+        margin-bottom: 20px;
+    }
+
+.delete-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.cancel-delete-button,
+.confirm-delete-button {
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cancel-delete-button {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.confirm-delete-button {
+    background: #dc2626;
+    color: white;
+}
+.details-documents-list {
+    margin-left: 24px;
+}
+.details-document-item {
+    font-size: 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.details-document-selected {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #2d27b8;
+    cursor: pointer;
+}
+
+
+.details-document-item,
+.details-document-selected {
+    font-size: 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+.details-documents-title {
+    cursor: pointer;
+}
