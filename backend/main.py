@@ -3,10 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import models
 from routers.auth import router as auth_router
 from routers.projects import router as projects_router
+from routers.documents import router as documents_router
 
 app = FastAPI(title="IIS API")
 app.include_router(auth_router)
 app.include_router(projects_router)
+app.include_router(documents_router)
 
 app.add_middleware(
     CORSMiddleware,

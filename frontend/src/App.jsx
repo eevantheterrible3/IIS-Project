@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Projects from "./pages/Projects";
+import DocumentDetails from "./pages/DocumentDetails";
 
 function App() {
     return (
@@ -14,6 +15,7 @@ function App() {
                 <Route path="/manager" element={<h1>Manager page</h1>} />
                 <Route path="/team-member" element={<h1>Team member page</h1>} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/documents/:documentId" element={<DocumentDetails />} />
             </Routes>
         </BrowserRouter>
     );
