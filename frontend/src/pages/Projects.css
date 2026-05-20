@@ -159,3 +159,47 @@
 	.logout-button:hover {
 		background: #f5f5f5;
 	}
+.project-details-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.project-actions {
+	display: flex;
+	gap: 10px;
+}
+
+.project-edit-button,
+.project-delete-button,
+.project-add-button {
+	border: none;
+	border-radius: 6px;
+	padding: 8px 14px;
+	color: white;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.project-edit-button {
+	background: #2563eb;
+}
+
+.project-delete-button {
+	background: #dc2626;
+}
+
+.project-add-button {
+	background: #16a34a;
+	margin-top: 16px;
+}
+
+.empty-project-state {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+}
+.sidebar-title {
+	cursor: pointer;
+}

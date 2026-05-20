@@ -1,5 +1,5 @@
 from schemas.project_schema import ProjectListResponse
-
+from fastapi import HTTPException
 
 class ProjectService:
     def __init__(self, project_repository):
@@ -34,3 +34,12 @@ class ProjectService:
             )
             for work in works
         ]
+    async def delete_project(self, project_id: int):
+        project = await self.project_repository.get_project_by_id(project_id)
+
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        await self.project_repository.delete_project(project)
+
+        return {"message": "Project deleted successfully"}
