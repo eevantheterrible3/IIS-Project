@@ -4,11 +4,14 @@ import documentIcon from "../assets/document-icon.png";
 import editIcon from "../assets/edit.png";
 import deleteIcon from "../assets/delete.png";
 import { useNavigate, useParams } from "react-router-dom";
+import EditDocumentModal from "../pages/EditDocumentModal";
+
 export default function DocumentDetails() {
     const { documentId } = useParams();
     const [document, setDocument] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const navigate = useNavigate();
+    const [showEditModal, setShowEditModal] = useState(false);
 
     useEffect(() => {
         fetch(`http://localhost:8000/documents/${documentId}`)
@@ -63,7 +66,10 @@ export default function DocumentDetails() {
                         </div>
 
                         <div className="document-actions">
-                            <button className="document-action-button edit-button">
+                            <button
+                                className="document-action-button edit-button"
+                                onClick={() => setShowEditModal(true)}
+                            >
                                 <img src={editIcon} alt="Edit" />
                                 Edit
                             </button>
@@ -127,6 +133,31 @@ export default function DocumentDetails() {
                         </div>
                     </div>
                 </div>
+            )}
+            {showEditModal && (
+                <EditDocumentModal
+                    document={document}
+                    onClose={() => setShowEditModal(false)}
+                    onSave={async (updatedData) => {
+                        const response = await fetch(`http://localhost:8000/documents/${documentId}/edit`, {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(updatedData),
+                        });
+
+                        if (!response.ok) {
+                            alert("Failed to update document.");
+                            return;
+                        }
+
+                        const updatedDocument = await response.json();
+
+                        setDocument(updatedDocument);
+                        setShowEditModal(false);
+                    }}
+                />
             )}
         </div>
     );
