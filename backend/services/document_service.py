@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-
+from pathlib import Path
 from schemas.all_document_schema import DocumentListResponse
 from schemas.document_detail_schema import (
     DocumentDetailResponse,
@@ -50,3 +50,19 @@ class DocumentService:
                 for item in document.metadata_items
             ]
         )
+        
+        
+    async def delete_document(self, document_id: int):
+        document = await self.document_repository.get_document_by_id(document_id)
+
+        if document is None:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        file_path = document.file_path
+        await self.document_repository.delete_document(document)
+        if file_path:
+            path = Path(file_path)
+
+        if path.exists() and path.is_file():
+            path.unlink()
+        return {"message": "Document deleted successfully"}

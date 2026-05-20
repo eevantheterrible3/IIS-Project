@@ -29,3 +29,13 @@ class DocumentRepository:
         )
 
         return result.scalar_one_or_none()
+
+    async def delete_document(self, document: Document):
+        await self.db.delete(document)
+        await self.db.commit()
+
+    async def get_document_by_id(self, document_id: int):
+        result = await self.db.execute(
+            select(Document).where(Document.document_id == document_id)
+        )
+        return result.scalar_one_or_none()
