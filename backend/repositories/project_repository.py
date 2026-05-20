@@ -34,3 +34,8 @@ class ProjectRepository:
     async def delete_project(self, project: Project):
         await self.db.delete(project)
         await self.db.commit()
+    async def create_project(self, project: Project):
+        self.db.add(project)
+        await self.db.commit()
+        await self.db.refresh(project)
+        return project

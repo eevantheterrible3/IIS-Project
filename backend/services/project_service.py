@@ -1,5 +1,6 @@
 from schemas.project_schema import ProjectListResponse
 from fastapi import HTTPException
+from models.project import Project, ProjectStatus
 
 class ProjectService:
     def __init__(self, project_repository):
@@ -43,3 +44,14 @@ class ProjectService:
         await self.project_repository.delete_project(project)
 
         return {"message": "Project deleted successfully"}
+
+    async def create_project(self, request):
+        project = Project(
+            name=request.name,
+            description=request.description,
+            start_date=datetime.now(),
+            end_date=None,
+            status=ProjectStatus.ACTIVE
+        )
+
+        return await self.project_repository.create_project(project)

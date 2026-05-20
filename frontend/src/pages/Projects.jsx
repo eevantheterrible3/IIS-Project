@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import "./Projects.css";
 import { useNavigate, useLocation } from "react-router-dom";
-
+import ProjectFormModal from "./ProjectFormModal";
 
 export default function Projects() {
     const [projects, setProjects] = useState([]);
@@ -13,6 +13,7 @@ export default function Projects() {
     const navigate = useNavigate();
     const location = useLocation();
     const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+    const [showAddProjectModal, setShowAddProjectModal] = useState(false);
 
     useEffect(() => {
         const loggedUser = JSON.parse(localStorage.getItem("user"));
@@ -83,7 +84,27 @@ export default function Projects() {
         setOpenedProjectId(null);
         setShowDeleteProjectModal(false);
     }
+    async function handleCreateProject(projectData) {
+        const response = await fetch("http://localhost:8000/projects", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(projectData),
+        });
 
+        if (!response.ok) {
+            alert("Failed to create project.");
+            return;
+        }
+
+        const createdProject = await response.json();
+
+        setProjects([...projects, createdProject]);
+        setSelectedProject(createdProject);
+        setOpenedProjectId(createdProject.project_id);
+        setShowAddProjectModal(false);
+    }
     return (
         <div className="projects-page">
             <header className="projects-header">
@@ -193,9 +214,12 @@ export default function Projects() {
                         <div className="empty-project-state">
                             <h1>Select a project</h1>
 
-                            <button className="project-add-button">
-                                + Add project
-                            </button>
+                                <button
+                                    className="project-add-button"
+                                    onClick={() => setShowAddProjectModal(true)}
+                                >
+                                    + Add project
+                                </button>
                         </div>
                     )}
                 </main>
@@ -223,6 +247,13 @@ export default function Projects() {
                         </div>
                     </div>
                 </div>
+            )}
+            {showAddProjectModal && (
+                <ProjectFormModal
+                    title="Add project"
+                    onClose={() => setShowAddProjectModal(false)}
+                    onSave={handleCreateProject}
+                />
             )}
         </div>
     );
