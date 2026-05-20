@@ -24,3 +24,13 @@ class ProjectRepository:
     async def get_all_projects(self):
         result = await self.db.execute(select(Project))
         return result.scalars().all()
+
+    async def get_project_by_id(self, project_id: int):
+        result = await self.db.execute(
+            select(Project).where(Project.project_id == project_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def delete_project(self, project: Project):
+        await self.db.delete(project)
+        await self.db.commit()

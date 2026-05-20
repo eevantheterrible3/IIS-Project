@@ -34,3 +34,13 @@ async def get_project_documents(
     document_service = DocumentService(document_repository)
 
     return await document_service.get_documents_for_project(project_id)
+
+@router.delete("/{project_id}")
+async def delete_project(
+    project_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    project_repository = ProjectRepository(db)
+    project_service = ProjectService(project_repository)
+
+    return await project_service.delete_project(project_id)

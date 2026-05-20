@@ -142,3 +142,10 @@ SET name = 'Laptop Invoice',
     status = 'published'
 WHERE document_id = 5;
 commit;
+
+INSERT INTO users (username, name, last_name, email, password)
+VALUES ('sarah', 'Sarah', 'Turner', 'sarah@gmail.com', 'password123');
+INSERT INTO works (user_id, project_id, role_id)
+VALUES (5, 2, 1);
+INSERT INTO work (user_id, project_id, role_id)
+VALUES (6, 1, 1);
