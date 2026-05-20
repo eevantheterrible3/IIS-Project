@@ -10,6 +10,7 @@ from services.project_service import ProjectService
 from services.document_service import DocumentService
 from schemas.project_schema import ProjectListResponse
 from schemas.all_document_schema import DocumentListResponse
+from schemas.project_schema import ProjectCreateRequest
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -44,3 +45,12 @@ async def delete_project(
     project_service = ProjectService(project_repository)
 
     return await project_service.delete_project(project_id)
+@router.post("")
+async def create_project(
+    request: ProjectCreateRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    project_repository = ProjectRepository(db)
+    project_service = ProjectService(project_repository)
+
+    return await project_service.create_project(request)
