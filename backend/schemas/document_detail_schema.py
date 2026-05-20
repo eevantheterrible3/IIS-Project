@@ -23,3 +23,4 @@ class DocumentDetailResponse(BaseModel):
 
     tags: list[DocumentTagResponse]
     metadata: list[DocumentMetadataResponse]
+    project_id: int

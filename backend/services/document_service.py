@@ -37,6 +37,7 @@ class DocumentService:
             created_at=document.created_at,
             updated_at=document.updated_at,
             author=f"{document.user.name} {document.user.last_name}",
+            project_id=document.project.project_id,
             project_name=document.project.name,
             tags=[
                 DocumentTagResponse(name=tag.tag.name)
