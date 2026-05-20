@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import "./Projects.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 
 export default function Projects() {
@@ -11,6 +11,7 @@ export default function Projects() {
     const [selectedProject, setSelectedProject] = useState(null);
     const [showMenu, setShowMenu] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
 
     useEffect(() => {
@@ -19,7 +20,20 @@ export default function Projects() {
 
         fetch(`http://localhost:8000/projects/my?user_id=${loggedUser.user_id}`)
             .then((response) => response.json())
-            .then((data) => setProjects(data));
+            .then((data) => {
+                setProjects(data);
+
+                const selectedProjectId = location.state?.selectedProjectId;
+
+                if (selectedProjectId) {
+                    const project = data.find((p) => p.project_id === selectedProjectId);
+
+                    if (project) {
+                        setSelectedProject(project);
+                        setOpenedProjectId(selectedProjectId);
+                    }
+                }
+            });
     }, []);
 
     async function toggleProject(projectId) {

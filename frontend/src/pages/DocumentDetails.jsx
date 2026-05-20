@@ -5,6 +5,7 @@ import editIcon from "../assets/edit.png";
 import deleteIcon from "../assets/delete.png";
 import { useNavigate, useParams } from "react-router-dom";
 import EditDocumentModal from "../pages/EditDocumentModal";
+import Header from "../components/Header";
 
 export default function DocumentDetails() {
     const { documentId } = useParams();
@@ -12,11 +13,23 @@ export default function DocumentDetails() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const navigate = useNavigate();
     const [showEditModal, setShowEditModal] = useState(false);
+    const [projectDocuments, setProjectDocuments] = useState([]);
 
     useEffect(() => {
         fetch(`http://localhost:8000/documents/${documentId}`)
             .then((response) => response.json())
             .then((data) => setDocument(data));
+    }, [documentId]);
+    useEffect(() => {
+        fetch(`http://localhost:8000/documents/${documentId}`)
+            .then((response) => response.json())
+            .then((data) => {
+                setDocument(data);
+
+                fetch(`http://localhost:8000/projects/${data.project_id}/documents`)
+                    .then((response) => response.json())
+                    .then((documents) => setProjectDocuments(documents));
+            });
     }, [documentId]);
 
     if (!document) {
@@ -37,9 +50,7 @@ export default function DocumentDetails() {
 
     return (
         <div className="document-details-page">
-            <header className="document-header">
-                <div className="document-logo">DOCUMENT MANAGEMENT</div>
-            </header>
+            <Header />
 
             <div className="document-layout">
                 <aside className="document-left-panel">
@@ -48,10 +59,30 @@ export default function DocumentDetails() {
                     <div className="details-project-open">
                         <div className="details-project-name">▼ {document.project_name}</div>
 
-                        <div className="details-documents-title">▼ Documents</div>
-
-                        <div className="details-document-selected">
-                            {document.name}
+                        <div
+                            className="details-documents-title"
+                            onClick={() =>
+                                navigate("/projects", {
+                                    state: { selectedProjectId: document.project_id }
+                                })
+                            }
+                        >
+                            ▼ Documents
+                        </div>
+                        <div className="details-documents-list">
+                            {projectDocuments.map((projectDocument) => (
+                                <div
+                                    key={projectDocument.document_id}
+                                    className={
+                                        projectDocument.document_id === Number(documentId)
+                                            ? "details-document-selected"
+                                            : "details-document-item"
+                                    }
+                                    onClick={() => navigate(`/documents/${projectDocument.document_id}`)}
+                                >
+                                    {projectDocument.name}
+                                </div>
+                            ))}
                         </div>
 
                         <div className="details-permissions">▶ Permissions</div>
