@@ -10,7 +10,7 @@ from services.project_service import ProjectService
 from services.document_service import DocumentService
 from schemas.project_schema import ProjectListResponse
 from schemas.all_document_schema import DocumentListResponse
-from schemas.project_schema import ProjectCreateRequest
+from schemas.project_schema import ProjectCreateRequest, ProjectUpdateRequest
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
@@ -54,3 +54,13 @@ async def create_project(
     project_service = ProjectService(project_repository)
 
     return await project_service.create_project(request)
+@router.put("/{project_id}")
+async def update_project(
+    project_id: int,
+    request: ProjectUpdateRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    project_repository = ProjectRepository(db)
+    project_service = ProjectService(project_repository)
+
+    return await project_service.update_project(project_id, request)

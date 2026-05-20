@@ -1,6 +1,7 @@
 from schemas.project_schema import ProjectListResponse
 from fastapi import HTTPException
 from models.project import Project, ProjectStatus
+from datetime import datetime
 
 class ProjectService:
     def __init__(self, project_repository):
@@ -55,3 +56,14 @@ class ProjectService:
         )
 
         return await self.project_repository.create_project(project)
+
+    async def update_project(self, project_id: int, request):
+        project = await self.project_repository.get_project_by_id(project_id)
+
+        if project is None:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        project.name = request.name
+        project.description = request.description
+
+        return await self.project_repository.update_project(project)
