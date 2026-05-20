@@ -66,3 +66,17 @@ class DocumentService:
         if path.exists() and path.is_file():
             path.unlink()
         return {"message": "Document deleted successfully"}
+
+    async def update_document_tags_and_metadata(self, document_id: int, request):
+        document = await self.document_repository.get_document_details(document_id)
+
+        if document is None:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        await self.document_repository.update_document_tags_and_metadata(
+            document,
+            request.tags,
+            request.metadata
+        )
+
+        return await self.get_document_details(document_id)

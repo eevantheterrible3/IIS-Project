@@ -8,6 +8,7 @@ from schemas.document_detail_schema import DocumentDetailResponse
 from fastapi.responses import FileResponse
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
+from schemas.document_update_schema import UpdateDocumentRequest
 
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -55,3 +56,17 @@ async def delete_document(
     document_service = DocumentService(document_repository)
 
     return await document_service.delete_document(document_id)
+
+@router.put("/{document_id}/edit", response_model=DocumentDetailResponse)
+async def update_document_tags_and_metadata(
+    document_id: int,
+    request: UpdateDocumentRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    document_repository = DocumentRepository(db)
+    document_service = DocumentService(document_repository)
+
+    return await document_service.update_document_tags_and_metadata(
+        document_id,
+        request
+    )
