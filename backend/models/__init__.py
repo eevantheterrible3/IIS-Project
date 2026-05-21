@@ -9,3 +9,10 @@ from .activity import Activity
 from .tag import Tag
 from .is_marked import IsMarked
 from .allows import Allows
+from .task_workflow import TaskWorkflow
+from .task_workflow_step import TaskWorkflowStep
+from .task import Task
+from .subtask import Subtask
+from .task_status_history import TaskStatusHistory
+from .resource import Resource
+from .task_resource import TaskResource
