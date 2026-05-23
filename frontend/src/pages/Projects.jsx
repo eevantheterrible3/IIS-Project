@@ -21,7 +21,7 @@ export default function Projects() {
         const loggedUser = JSON.parse(localStorage.getItem("user"));
         setUser(loggedUser);
 
-        authFetch("http://localhost:8000/projects/my")
+        authFetch("/projects/my")
             .then((response) => response.json())
             .then((data) => {
                 setProjects(data);
@@ -50,7 +50,7 @@ export default function Projects() {
         setOpenedProjectId(projectId);
 
         if (!documentsByProject[projectId]) {
-            const response = await authFetch(`http://localhost:8000/projects/${projectId}/documents`);
+            const response = await authFetch(`/projects/${projectId}/documents`);
 
             const documents = await response.json();
 
@@ -67,7 +67,7 @@ export default function Projects() {
         return role?.toLowerCase().replaceAll("_", " ");
     }
     async function handleDeleteProject() {
-        const response = await authFetch(`http://localhost:8000/projects/${selectedProject.project_id}`, { method: "DELETE" });
+        const response = await authFetch(`/projects/${selectedProject.project_id}`, { method: "DELETE" });
 
         if (!response.ok) {
             alert("Failed to delete project.");
@@ -83,7 +83,7 @@ export default function Projects() {
         setShowDeleteProjectModal(false);
     }
     async function handleCreateProject(projectData) {
-        const response = await authFetch("http://localhost:8000/projects", {
+        const response = await authFetch("/projects", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(projectData),
@@ -102,7 +102,7 @@ export default function Projects() {
         setShowAddProjectModal(false);
     }
     async function handleUpdateProject(projectData) {
-        const response = await authFetch(`http://localhost:8000/projects/${selectedProject.project_id}`, {
+        const response = await authFetch(`/projects/${selectedProject.project_id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(projectData),

@@ -59,11 +59,11 @@ export default function SystemPrompts() {
     useEffect(() => { fetchAll(); }, []);
 
     async function fetchAll() {
-        const types = await authFetch("http://localhost:8000/document-types").then(r => r.json());
+        const types = await authFetch("/document-types").then(r => r.json());
         setDocTypes(types);
         const all = [];
         for (const t of types) {
-            const tpls = await authFetch(`http://localhost:8000/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
+            const tpls = await authFetch(`/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
             tpls.forEach(tpl => all.push({ ...tpl, document_type_name: t.name }));
         }
         setSectionTemplates(all);
@@ -74,8 +74,8 @@ export default function SystemPrompts() {
     async function handleSave() {
         const { _type, ...item } = editTarget;
         const url = _type === "doctype"
-            ? `http://localhost:8000/document-types/${item.document_type_id}`
-            : `http://localhost:8000/section-templates/${item.section_template_id}`;
+            ? `/document-types/${item.document_type_id}`
+            : `/section-templates/${item.section_template_id}`;
         const body = _type === "doctype"
             ? { name: item.name, description: item.description, system_prompt: editPrompt }
             : { name: item.name, content_structure: item.content_structure, system_prompt: editPrompt, order_index: item.order_index };

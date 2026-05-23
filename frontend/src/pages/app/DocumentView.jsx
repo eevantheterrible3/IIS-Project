@@ -27,13 +27,13 @@ export default function DocumentView() {
     const [saving, setSaving] = useState(null);
 
     useEffect(() => {
-        authFetch(`http://localhost:8000/documents/${id}`).then(r => r.json()).then(setDocument);
-        authFetch(`http://localhost:8000/documents/${id}/sections`).then(r => r.json()).then(setSections);
+        authFetch(`/documents/${id}`).then(r => r.json()).then(setDocument);
+        authFetch(`/documents/${id}/sections`).then(r => r.json()).then(setSections);
     }, [id]);
 
     async function saveSection(section) {
         setSaving(section.document_section_id);
-        await authFetch(`http://localhost:8000/document-sections/${section.document_section_id}`, {
+        await authFetch(`/document-sections/${section.document_section_id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: section.content }),
