@@ -1,15 +1,18 @@
-from fastapi import APIRouter, Depends
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
+from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from repositories.document_repository import DocumentRepository
+from repositories.document_section_repository import DocumentSectionRepository
 from services.document_service import DocumentService
+from services.document_section_service import DocumentSectionService
 from schemas.document_detail_schema import DocumentDetailResponse
-from fastapi.responses import FileResponse
-from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException
 from schemas.document_update_schema import UpdateDocumentRequest
-
+from schemas.document_section_schema import DocumentSectionResponse
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -70,3 +73,9 @@ async def update_document_tags_and_metadata(
         document_id,
         request
     )
+
+
+@router.get("/{document_id}/sections", response_model=List[DocumentSectionResponse])
+async def get_document_sections(document_id: int, db: AsyncSession = Depends(get_db)):
+    service = DocumentSectionService(DocumentSectionRepository(db))
+    return await service.get_by_document(document_id)
