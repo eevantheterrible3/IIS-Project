@@ -55,8 +55,8 @@ export default function DocumentsList() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 name: createForm.name,
-                document_type_id: parseInt(createForm.document_type_id),
-                project_id: parseInt(createForm.project_id),
+                document_type_id: createForm.document_type_id,
+                project_id: createForm.project_id,
                 user_prompt: createForm.user_prompt || null,
             }),
         });

@@ -75,7 +75,7 @@ export default function DocumentDetails() {
                                 <div
                                     key={projectDocument.document_id}
                                     className={
-                                        projectDocument.document_id === Number(documentId)
+                                        projectDocument.document_id === documentId
                                             ? "details-document-selected"
                                             : "details-document-item"
                                     }

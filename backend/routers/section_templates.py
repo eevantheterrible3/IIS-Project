@@ -13,7 +13,7 @@ router = APIRouter(prefix="/section-templates", tags=["Section Templates"])
 
 @router.put("/{section_template_id}", response_model=SectionTemplateResponse)
 async def update_section_template(
-    section_template_id: int,
+    section_template_id: str,
     request: SectionTemplateUpdateRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -24,7 +24,7 @@ async def update_section_template(
 
 @router.delete("/{section_template_id}")
 async def delete_section_template(
-    section_template_id: int,
+    section_template_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

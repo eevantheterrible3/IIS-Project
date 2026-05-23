@@ -15,7 +15,7 @@ router = APIRouter(prefix="/document-sections", tags=["Document Sections"])
 
 @router.put("/{document_section_id}", response_model=DocumentSectionResponse)
 async def update_document_section(
-    document_section_id: int,
+    document_section_id: str,
     request: DocumentSectionUpdateRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
