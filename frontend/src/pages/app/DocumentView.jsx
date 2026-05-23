@@ -4,6 +4,7 @@ import { ChevronLeft, Save, Clock, Eye } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { authFetch } from "@/lib/api";
 
 function formatDate(dateStr) {
     if (!dateStr) return "—";
@@ -26,13 +27,13 @@ export default function DocumentView() {
     const [saving, setSaving] = useState(null);
 
     useEffect(() => {
-        fetch(`http://localhost:8000/documents/${id}`).then(r => r.json()).then(setDocument);
-        fetch(`http://localhost:8000/documents/${id}/sections`).then(r => r.json()).then(setSections);
+        authFetch(`http://localhost:8000/documents/${id}`).then(r => r.json()).then(setDocument);
+        authFetch(`http://localhost:8000/documents/${id}/sections`).then(r => r.json()).then(setSections);
     }, [id]);
 
     async function saveSection(section) {
         setSaving(section.document_section_id);
-        await fetch(`http://localhost:8000/document-sections/${section.document_section_id}`, {
+        await authFetch(`http://localhost:8000/document-sections/${section.document_section_id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ content: section.content }),

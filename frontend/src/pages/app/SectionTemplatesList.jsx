@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { authFetch } from "@/lib/api";
 
 const emptyForm = { name: "", document_type_id: "", content_structure: "", system_prompt: "", order_index: "0" };
 
@@ -19,14 +20,14 @@ export default function SectionTemplatesList() {
 
     useEffect(() => {
         fetchAll();
-        fetch("http://localhost:8000/document-types").then(r => r.json()).then(setDocumentTypes);
+        authFetch("http://localhost:8000/document-types").then(r => r.json()).then(setDocumentTypes);
     }, []);
 
     async function fetchAll() {
-        const types = await fetch("http://localhost:8000/document-types").then(r => r.json());
+        const types = await authFetch("http://localhost:8000/document-types").then(r => r.json());
         const all = [];
         for (const t of types) {
-            const tpls = await fetch(`http://localhost:8000/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
+            const tpls = await authFetch(`http://localhost:8000/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
             tpls.forEach(tpl => all.push({ ...tpl, document_type_name: t.name }));
         }
         setTemplates(all);
@@ -43,14 +44,14 @@ export default function SectionTemplatesList() {
         if (!form.name.trim() || !form.document_type_id) return;
         const payload = { name: form.name, content_structure: form.content_structure || null, system_prompt: form.system_prompt || null, order_index: parseInt(form.order_index) || 0 };
         const url = editTarget ? `http://localhost:8000/section-templates/${editTarget.section_template_id}` : `http://localhost:8000/document-types/${form.document_type_id}/section-templates`;
-        const res = await fetch(url, { method: editTarget ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        const res = await authFetch(url, { method: editTarget ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         if (!res.ok) { alert("Something went wrong."); return; }
         setShowModal(false);
         fetchAll();
     }
 
     async function handleDelete() {
-        const res = await fetch(`http://localhost:8000/section-templates/${deleteTarget.section_template_id}`, { method: "DELETE" });
+        const res = await authFetch(`http://localhost:8000/section-templates/${deleteTarget.section_template_id}`, { method: "DELETE" });
         if (!res.ok) { alert("Failed to delete."); return; }
         setTemplates(t => t.filter(x => x.section_template_id !== deleteTarget.section_template_id));
         setDeleteTarget(null);

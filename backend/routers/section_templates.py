@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.dependencies import get_current_user
 from database import get_db
+from models.user import User
 from repositories.section_template_repository import SectionTemplateRepository
+from schemas.section_template_schema import SectionTemplateResponse, SectionTemplateUpdateRequest
 from services.section_template_service import SectionTemplateService
-from schemas.section_template_schema import SectionTemplateUpdateRequest, SectionTemplateResponse
 
 router = APIRouter(prefix="/section-templates", tags=["Section Templates"])
 
@@ -13,6 +15,7 @@ router = APIRouter(prefix="/section-templates", tags=["Section Templates"])
 async def update_section_template(
     section_template_id: int,
     request: SectionTemplateUpdateRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     service = SectionTemplateService(SectionTemplateRepository(db))
@@ -20,6 +23,10 @@ async def update_section_template(
 
 
 @router.delete("/{section_template_id}")
-async def delete_section_template(section_template_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_section_template(
+    section_template_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     service = SectionTemplateService(SectionTemplateRepository(db))
     return await service.delete(section_template_id)

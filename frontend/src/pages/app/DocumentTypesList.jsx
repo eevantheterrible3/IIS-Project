@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { authFetch } from "@/lib/api";
 
 const emptyForm = { name: "", description: "", system_prompt: "" };
 
@@ -18,7 +19,7 @@ export default function DocumentTypesList() {
     useEffect(() => { fetchTypes(); }, []);
 
     async function fetchTypes() {
-        setTypes(await fetch("http://localhost:8000/document-types").then(r => r.json()));
+        setTypes(await authFetch("http://localhost:8000/document-types").then(r => r.json()));
     }
 
     function openCreate() { setEditTarget(null); setForm(emptyForm); setShowModal(true); }
@@ -31,14 +32,14 @@ export default function DocumentTypesList() {
     async function handleSave() {
         if (!form.name.trim()) return;
         const url = editTarget ? `http://localhost:8000/document-types/${editTarget.document_type_id}` : "http://localhost:8000/document-types";
-        const res = await fetch(url, { method: editTarget ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+        const res = await authFetch(url, { method: editTarget ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
         if (!res.ok) { alert("Something went wrong."); return; }
         setShowModal(false);
         fetchTypes();
     }
 
     async function handleDelete() {
-        const res = await fetch(`http://localhost:8000/document-types/${deleteTarget.document_type_id}`, { method: "DELETE" });
+        const res = await authFetch(`http://localhost:8000/document-types/${deleteTarget.document_type_id}`, { method: "DELETE" });
         if (!res.ok) { alert("Failed to delete."); return; }
         setTypes(t => t.filter(x => x.document_type_id !== deleteTarget.document_type_id));
         setDeleteTarget(null);
