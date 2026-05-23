@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,14 +8,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.dependencies import get_current_user
 from database import get_db
+from models.document_version import DocumentVersion
 from models.user import User
 from repositories.document_repository import DocumentRepository
 from repositories.document_section_repository import DocumentSectionRepository
+from repositories.document_version_repository import DocumentVersionRepository
 from repositories.section_template_repository import SectionTemplateRepository
 from schemas.all_document_schema import DocumentCreateRequest, DocumentListItemResponse
 from schemas.document_detail_schema import DocumentDetailResponse
 from schemas.document_section_schema import DocumentSectionResponse
 from schemas.document_update_schema import UpdateDocumentRequest
+from schemas.document_version_schema import DocumentSaveRequest, DocumentVersionResponse
 from services.document_section_service import DocumentSectionService
 from services.document_service import DocumentService
 
@@ -109,3 +113,61 @@ async def get_document_sections(
 ):
     service = DocumentSectionService(DocumentSectionRepository(db))
     return await service.get_by_document(document_id)
+
+
+@router.post("/{document_id}/save")
+async def save_document(
+    document_id: str,
+    request: DocumentSaveRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    section_repo = DocumentSectionRepository(db)
+    for item in request.sections:
+        section = await section_repo.get_by_id(item.document_section_id)
+        if section:
+            section.content = item.content
+            await section_repo.update(section)
+
+    all_sections = await section_repo.get_by_document(document_id)
+    snapshot = json.dumps([
+        {
+            "section_name": s.section_template.name if s.section_template else f"Section {i + 1}",
+            "content": s.content or "",
+            "order_index": s.order_index,
+        }
+        for i, s in enumerate(all_sections)
+    ])
+
+    version_repo = DocumentVersionRepository(db)
+    latest = await version_repo.get_latest_number(document_id)
+    version = DocumentVersion(
+        document_id=document_id,
+        author_id=current_user.user_id,
+        version_number=latest + 1,
+        full_content=snapshot,
+        note=request.note,
+    )
+    created = await version_repo.create(version)
+    return {"version_number": created.version_number}
+
+
+@router.get("/{document_id}/versions", response_model=List[DocumentVersionResponse])
+async def get_document_versions(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = DocumentVersionRepository(db)
+    versions = await repo.get_by_document(document_id)
+    return [
+        DocumentVersionResponse(
+            document_version_id=v.document_version_id,
+            version_number=v.version_number,
+            note=v.note,
+            full_content=v.full_content,
+            created_at=v.created_at,
+            author_name=f"{v.author.name} {v.author.last_name}" if v.author else None,
+        )
+        for v in versions
+    ]

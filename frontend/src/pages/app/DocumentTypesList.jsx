@@ -64,13 +64,14 @@ export default function DocumentTypesList() {
                             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Name</th>
                             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Description</th>
                             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">System Prompt</th>
+                            <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Sections</th>
                             <th className="px-5 py-3 w-20" />
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                         {types.length === 0 && (
                             <tr>
-                                <td colSpan={4} className="px-5 py-16 text-center">
+                                <td colSpan={5} className="px-5 py-16 text-center">
                                     <Layers size={32} className="mx-auto mb-3 text-slate-300" />
                                     <p className="text-slate-500 font-medium">No document types yet</p>
                                     <p className="text-slate-400 text-xs mt-1">Create a document type to get started.</p>
@@ -89,6 +90,12 @@ export default function DocumentTypesList() {
                                 </td>
                                 <td className="px-5 py-3.5 text-slate-500 max-w-xs truncate">{type.description || <span className="text-slate-300">—</span>}</td>
                                 <td className="px-5 py-3.5 text-slate-400 max-w-xs truncate font-mono text-xs">{type.system_prompt || <span className="not-italic text-slate-300">—</span>}</td>
+                                <td className="px-5 py-3.5">
+                                    {type.section_templates?.length > 0
+                                        ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-600">{type.section_templates.length}</span>
+                                        : <span className="text-slate-300">—</span>
+                                    }
+                                </td>
                                 <td className="px-5 py-3.5">
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors" onClick={() => openEdit(type)}><Pencil size={13} /></button>

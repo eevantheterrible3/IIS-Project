@@ -10,7 +10,9 @@ class DocumentTypeRepository:
         self.db = db
 
     async def get_all(self):
-        result = await self.db.execute(select(DocumentType))
+        result = await self.db.execute(
+            select(DocumentType).options(selectinload(DocumentType.section_templates))
+        )
         return result.scalars().all()
 
     async def get_by_id(self, document_type_id: int):

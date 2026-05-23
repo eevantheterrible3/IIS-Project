@@ -24,7 +24,7 @@ from services.section_template_service import SectionTemplateService
 router = APIRouter(prefix="/document-types", tags=["Document Types"])
 
 
-@router.get("", response_model=List[DocumentTypeResponse])
+@router.get("", response_model=List[DocumentTypeDetailResponse])
 async def get_all_document_types(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

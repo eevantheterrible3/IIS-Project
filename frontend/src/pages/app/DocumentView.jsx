@@ -8,7 +8,7 @@ import { authFetch } from "@/lib/api";
 
 function formatDate(dateStr) {
     if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleDateString("en", { day: "numeric", month: "short", year: "numeric" });
+    return new Date(dateStr).toLocaleDateString("en", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 const statusColors = {
@@ -23,26 +23,52 @@ export default function DocumentView() {
 
     const [document, setDocument] = useState(null);
     const [sections, setSections] = useState([]);
-    const [versions] = useState([]);
-    const [saving, setSaving] = useState(null);
+    const [versions, setVersions] = useState([]);
+    const [selectedVersion, setSelectedVersion] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [savedMsg, setSavedMsg] = useState(false);
 
     useEffect(() => {
         authFetch(`/documents/${id}`).then(r => r.json()).then(setDocument);
         authFetch(`/documents/${id}/sections`).then(r => r.json()).then(setSections);
+        fetchVersions();
     }, [id]);
 
-    async function saveSection(section) {
-        setSaving(section.document_section_id);
-        await authFetch(`/document-sections/${section.document_section_id}`, {
-            method: "PUT",
+    async function fetchVersions() {
+        const data = await authFetch(`/documents/${id}/versions`).then(r => r.json());
+        setVersions(Array.isArray(data) ? data : []);
+    }
+
+    async function handleSave() {
+        setSaving(true);
+        const res = await authFetch(`/documents/${id}/save`, {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ content: section.content }),
+            body: JSON.stringify({
+                sections: sections.map(s => ({
+                    document_section_id: s.document_section_id,
+                    content: s.content ?? null,
+                })),
+            }),
         });
-        setSaving(null);
+        setSaving(false);
+        if (res.ok) {
+            setSavedMsg(true);
+            setTimeout(() => setSavedMsg(false), 2000);
+            fetchVersions();
+        }
     }
 
     function updateSectionContent(sectionId, content) {
         setSections(prev => prev.map(s => s.document_section_id === sectionId ? { ...s, content } : s));
+    }
+
+    function getVersionSections(version) {
+        try {
+            return JSON.parse(version.full_content || "[]");
+        } catch {
+            return [];
+        }
     }
 
     if (!document) {
@@ -84,10 +110,25 @@ export default function DocumentView() {
                     </TabsTrigger>
                     <TabsTrigger value="versions" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
                         <Clock size={13} /> Version History
+                        {versions.length > 0 && (
+                            <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-slate-200 text-slate-600">{versions.length}</span>
+                        )}
                     </TabsTrigger>
                 </TabsList>
 
+                {/* Preview tab */}
                 <TabsContent value="preview">
+                    <div className="flex justify-end mb-4">
+                        <Button
+                            className="bg-indigo-600 hover:bg-indigo-500 gap-1.5"
+                            disabled={saving}
+                            onClick={handleSave}
+                        >
+                            <Save size={13} />
+                            {saving ? "Saving..." : savedMsg ? "Saved!" : "Save Document"}
+                        </Button>
+                    </div>
+
                     {sections.length === 0 ? (
                         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
                             <p className="text-slate-500 font-medium">No sections</p>
@@ -97,20 +138,10 @@ export default function DocumentView() {
                         <div className="space-y-4">
                             {sections.map((section, i) => (
                                 <div key={section.document_section_id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50">
+                                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
                                         <h3 className="text-sm font-semibold text-slate-700">
                                             {section.section_name || `Section ${i + 1}`}
                                         </h3>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-7 text-xs gap-1"
-                                            disabled={saving === section.document_section_id}
-                                            onClick={() => saveSection(section)}
-                                        >
-                                            <Save size={11} />
-                                            {saving === section.document_section_id ? "Saving..." : "Save"}
-                                        </Button>
                                     </div>
                                     <div className="p-4">
                                         <Textarea
@@ -127,24 +158,63 @@ export default function DocumentView() {
                     )}
                 </TabsContent>
 
+                {/* Version History tab */}
                 <TabsContent value="versions">
                     {versions.length === 0 ? (
                         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
                             <Clock size={32} className="mx-auto mb-3 text-slate-300" />
                             <p className="text-slate-500 font-medium">No versions saved</p>
-                            <p className="text-slate-400 text-sm mt-1">Version history will appear here.</p>
+                            <p className="text-slate-400 text-sm mt-1">Save the document to create a version.</p>
                         </div>
                     ) : (
-                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100">
-                            {versions.map(v => (
-                                <div key={v.document_version_id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50">
-                                    <div>
-                                        <span className="text-sm font-semibold text-slate-800">Version {v.version_number}</span>
-                                        {v.note && <p className="text-xs text-slate-500 mt-0.5">{v.note}</p>}
+                        <div className="flex gap-4 h-[600px]">
+                            {/* Left: version list */}
+                            <div className="w-56 shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-y-auto">
+                                {versions.map(v => (
+                                    <button
+                                        key={v.document_version_id}
+                                        onClick={() => setSelectedVersion(v)}
+                                        className={`w-full text-left px-4 py-3 border-b border-slate-100 last:border-0 transition-colors ${
+                                            selectedVersion?.document_version_id === v.document_version_id
+                                                ? "bg-indigo-50 border-l-2 border-l-indigo-500"
+                                                : "hover:bg-slate-50"
+                                        }`}
+                                    >
+                                        <div className="text-sm font-semibold text-slate-800">v{v.version_number}</div>
+                                        <div className="text-xs text-slate-400 mt-0.5">{formatDate(v.created_at)}</div>
+                                        {v.author_name && <div className="text-xs text-slate-400">{v.author_name}</div>}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Right: version content */}
+                            <div className="flex-1 overflow-y-auto">
+                                {!selectedVersion ? (
+                                    <div className="bg-white rounded-xl border border-slate-200 h-full flex items-center justify-center">
+                                        <p className="text-slate-400 text-sm">Select a version to view</p>
                                     </div>
-                                    <span className="text-xs text-slate-400">{formatDate(v.created_at)}</span>
-                                </div>
-                            ))}
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm font-semibold text-slate-700">Version {selectedVersion.version_number}</span>
+                                            <span className="text-xs text-slate-400">{formatDate(selectedVersion.created_at)}</span>
+                                            {selectedVersion.author_name && <span className="text-xs text-slate-400">· {selectedVersion.author_name}</span>}
+                                        </div>
+                                        {getVersionSections(selectedVersion).map((section, i) => (
+                                            <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                                <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
+                                                    <h3 className="text-sm font-semibold text-slate-700">
+                                                        {section.section_name || `Section ${i + 1}`}
+                                                    </h3>
+                                                </div>
+                                                <div className="p-5 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+                                                    {section.content || <span className="text-slate-300 italic">Empty</span>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </TabsContent>

@@ -47,11 +47,6 @@ export default function Sidebar() {
                 ))}
             </nav>
 
-            <div className="px-4 py-3 border-t border-slate-700">
-                <p className="text-xs text-slate-500">
-                    Organization: <span className="text-slate-300 font-medium">Mreža aktivista</span>
-                </p>
-            </div>
         </aside>
     );
 }
