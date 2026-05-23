@@ -22,3 +22,6 @@ frontend/dist/
 # OS
 .DS_Store
 .vs/
+
+# Files
+spec.pdf
