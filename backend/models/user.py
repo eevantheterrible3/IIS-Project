@@ -17,3 +17,5 @@ class User(Base):
     documents = relationship("Document", back_populates="user")
     activities = relationship("Activity", back_populates="user")
     allowed_permissions = relationship("Allows", back_populates="user")
+    document_versions = relationship("DocumentVersion", back_populates="author")
+    document_ratings = relationship("DocumentRating", back_populates="user")
