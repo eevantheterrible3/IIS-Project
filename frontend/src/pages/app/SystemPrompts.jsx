@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { authFetch } from "@/lib/api";
 
 function PromptTable({ rows, columns, emptyIcon: Icon, emptyText, onEdit }) {
     return (
@@ -58,11 +59,11 @@ export default function SystemPrompts() {
     useEffect(() => { fetchAll(); }, []);
 
     async function fetchAll() {
-        const types = await fetch("http://localhost:8000/document-types").then(r => r.json());
+        const types = await authFetch("http://localhost:8000/document-types").then(r => r.json());
         setDocTypes(types);
         const all = [];
         for (const t of types) {
-            const tpls = await fetch(`http://localhost:8000/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
+            const tpls = await authFetch(`http://localhost:8000/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
             tpls.forEach(tpl => all.push({ ...tpl, document_type_name: t.name }));
         }
         setSectionTemplates(all);
@@ -78,7 +79,7 @@ export default function SystemPrompts() {
         const body = _type === "doctype"
             ? { name: item.name, description: item.description, system_prompt: editPrompt }
             : { name: item.name, content_structure: item.content_structure, system_prompt: editPrompt, order_index: item.order_index };
-        const res = await fetch(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const res = await authFetch(url, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
         if (!res.ok) { alert("Something went wrong."); return; }
         setEditTarget(null);
         fetchAll();
