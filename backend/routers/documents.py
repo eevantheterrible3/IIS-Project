@@ -53,7 +53,7 @@ async def create_document(
 
 @router.get("/{document_id}", response_model=DocumentDetailResponse)
 async def get_document_details(
-    document_id: int,
+    document_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -63,7 +63,7 @@ async def get_document_details(
 
 @router.get("/{document_id}/file")
 async def get_document_file(
-    document_id: int,
+    document_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -82,7 +82,7 @@ async def get_document_file(
 
 @router.delete("/delete/{document_id}")
 async def delete_document(
-    document_id: int,
+    document_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -92,7 +92,7 @@ async def delete_document(
 
 @router.put("/{document_id}/edit", response_model=DocumentDetailResponse)
 async def update_document(
-    document_id: int,
+    document_id: str,
     request: UpdateDocumentRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -103,7 +103,7 @@ async def update_document(
 
 @router.get("/{document_id}/sections", response_model=List[DocumentSectionResponse])
 async def get_document_sections(
-    document_id: int,
+    document_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

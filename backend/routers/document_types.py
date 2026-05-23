@@ -35,7 +35,7 @@ async def get_all_document_types(
 
 @router.get("/{document_type_id}", response_model=DocumentTypeDetailResponse)
 async def get_document_type(
-    document_type_id: int,
+    document_type_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -55,7 +55,7 @@ async def create_document_type(
 
 @router.put("/{document_type_id}", response_model=DocumentTypeResponse)
 async def update_document_type(
-    document_type_id: int,
+    document_type_id: str,
     request: DocumentTypeUpdateRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -66,7 +66,7 @@ async def update_document_type(
 
 @router.delete("/{document_type_id}")
 async def delete_document_type(
-    document_type_id: int,
+    document_type_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -76,7 +76,7 @@ async def delete_document_type(
 
 @router.get("/{document_type_id}/section-templates", response_model=List[SectionTemplateResponse])
 async def get_section_templates(
-    document_type_id: int,
+    document_type_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -86,7 +86,7 @@ async def get_section_templates(
 
 @router.post("/{document_type_id}/section-templates", response_model=SectionTemplateResponse)
 async def create_section_template(
-    document_type_id: int,
+    document_type_id: str,
     request: SectionTemplateCreateRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

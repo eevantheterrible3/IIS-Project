@@ -27,7 +27,7 @@ async def get_my_projects(
 
 @router.get("/{project_id}/documents", response_model=List[DocumentListResponse])
 async def get_project_documents(
-    project_id: int,
+    project_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -47,7 +47,7 @@ async def create_project(
 
 @router.put("/{project_id}")
 async def update_project(
-    project_id: int,
+    project_id: str,
     request: ProjectUpdateRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -58,7 +58,7 @@ async def update_project(
 
 @router.delete("/{project_id}")
 async def delete_project(
-    project_id: int,
+    project_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

@@ -91,9 +91,8 @@ class DocumentService:
         await self.document_repository.delete_document(document)
         if file_path:
             path = Path(file_path)
-
-        if path.exists() and path.is_file():
-            path.unlink()
+            if path.exists() and path.is_file():
+                path.unlink()
         return {"message": "Document deleted successfully"}
 
     async def update_document_tags_and_metadata(self, document_id: int, request):

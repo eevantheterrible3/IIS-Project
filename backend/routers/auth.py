@@ -125,8 +125,8 @@ async def refresh_token(request: RefreshRequest, db: AsyncSession = Depends(get_
     except JWTError:
         raise exc
 
-    result = await db.execute(select(User).where(User.user_id == int(user_id)))
+    result = await db.execute(select(User).where(User.user_id == user_id))
     if not result.scalar_one_or_none():
         raise exc
 
-    return {"access_token": create_access_token(int(user_id)), "token_type": "bearer"}
+    return {"access_token": create_access_token(user_id), "token_type": "bearer"}
