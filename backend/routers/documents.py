@@ -13,8 +13,40 @@ from services.document_section_service import DocumentSectionService
 from schemas.document_detail_schema import DocumentDetailResponse
 from schemas.document_update_schema import UpdateDocumentRequest
 from schemas.document_section_schema import DocumentSectionResponse
+from schemas.all_document_schema import DocumentListItemResponse, DocumentCreateRequest
+from repositories.section_template_repository import SectionTemplateRepository
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
+
+
+@router.get("/my", response_model=List[DocumentListItemResponse])
+async def get_my_documents(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    service = DocumentService(DocumentRepository(db))
+    return await service.get_documents_for_user(user_id)
+
+
+@router.post("", response_model=DocumentListItemResponse)
+async def create_document(
+    request: DocumentCreateRequest,
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    section_templates = await SectionTemplateRepository(db).get_by_document_type(request.document_type_id)
+    service = DocumentService(DocumentRepository(db))
+    doc = await service.create_document(request, user_id, section_templates)
+    return DocumentListItemResponse(
+        document_id=doc.document_id,
+        name=doc.name,
+        user_prompt=doc.user_prompt,
+        document_type_id=doc.document_type_id,
+        document_type_name=None,
+        status=doc.status,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+    )
 
 
 @router.get("/{document_id}", response_model=DocumentDetailResponse)
