@@ -20,14 +20,14 @@ export default function SectionTemplatesList() {
 
     useEffect(() => {
         fetchAll();
-        authFetch("http://localhost:8000/document-types").then(r => r.json()).then(setDocumentTypes);
+        authFetch("/document-types").then(r => r.json()).then(setDocumentTypes);
     }, []);
 
     async function fetchAll() {
-        const types = await authFetch("http://localhost:8000/document-types").then(r => r.json());
+        const types = await authFetch("/document-types").then(r => r.json());
         const all = [];
         for (const t of types) {
-            const tpls = await authFetch(`http://localhost:8000/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
+            const tpls = await authFetch(`/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
             tpls.forEach(tpl => all.push({ ...tpl, document_type_name: t.name }));
         }
         setTemplates(all);
@@ -43,7 +43,7 @@ export default function SectionTemplatesList() {
     async function handleSave() {
         if (!form.name.trim() || !form.document_type_id) return;
         const payload = { name: form.name, content_structure: form.content_structure || null, system_prompt: form.system_prompt || null, order_index: parseInt(form.order_index) || 0 };
-        const url = editTarget ? `http://localhost:8000/section-templates/${editTarget.section_template_id}` : `http://localhost:8000/document-types/${form.document_type_id}/section-templates`;
+        const url = editTarget ? `/section-templates/${editTarget.section_template_id}` : `/document-types/${form.document_type_id}/section-templates`;
         const res = await authFetch(url, { method: editTarget ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         if (!res.ok) { alert("Something went wrong."); return; }
         setShowModal(false);
@@ -51,7 +51,7 @@ export default function SectionTemplatesList() {
     }
 
     async function handleDelete() {
-        const res = await authFetch(`http://localhost:8000/section-templates/${deleteTarget.section_template_id}`, { method: "DELETE" });
+        const res = await authFetch(`/section-templates/${deleteTarget.section_template_id}`, { method: "DELETE" });
         if (!res.ok) { alert("Failed to delete."); return; }
         setTemplates(t => t.filter(x => x.section_template_id !== deleteTarget.section_template_id));
         setDeleteTarget(null);

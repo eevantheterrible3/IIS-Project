@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./Login.css";
+import { authFetch } from "@/lib/api";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -8,7 +9,7 @@ export default function Login() {
     async function handleLogin(e) {
         e.preventDefault();
 
-        const response = await fetch("http://localhost:8000/auth/login", {
+        const response = await authFetch("/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),

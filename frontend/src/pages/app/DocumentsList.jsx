@@ -39,18 +39,18 @@ export default function DocumentsList() {
 
     useEffect(() => {
         fetchDocuments();
-        authFetch("http://localhost:8000/document-types").then(r => r.json()).then(setDocumentTypes);
+        authFetch("/document-types").then(r => r.json()).then(setDocumentTypes);
         setProjects(JSON.parse(localStorage.getItem("projects") || "[]"));
     }, []);
 
     async function fetchDocuments() {
-        const res = await authFetch("http://localhost:8000/documents/my");
+        const res = await authFetch("/documents/my");
         setDocuments(await res.json());
     }
 
     async function handleCreate() {
         if (!createForm.name || !createForm.document_type_id || !createForm.project_id) return;
-        const res = await authFetch("http://localhost:8000/documents", {
+        const res = await authFetch("/documents", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -67,7 +67,7 @@ export default function DocumentsList() {
     }
 
     async function handleDelete() {
-        const res = await authFetch(`http://localhost:8000/documents/delete/${deleteTarget.document_id}`, { method: "DELETE" });
+        const res = await authFetch(`/documents/delete/${deleteTarget.document_id}`, { method: "DELETE" });
         if (!res.ok) { alert("Failed to delete document."); return; }
         setDocuments(d => d.filter(x => x.document_id !== deleteTarget.document_id));
         setDeleteTarget(null);

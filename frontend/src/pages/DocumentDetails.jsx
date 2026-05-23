@@ -6,6 +6,7 @@ import deleteIcon from "../assets/delete.png";
 import { useNavigate, useParams } from "react-router-dom";
 import EditDocumentModal from "../pages/EditDocumentModal";
 import Header from "../components/Header";
+import { authFetch, API_BASE } from "@/lib/api";
 
 export default function DocumentDetails() {
     const { documentId } = useParams();
@@ -16,17 +17,17 @@ export default function DocumentDetails() {
     const [projectDocuments, setProjectDocuments] = useState([]);
 
     useEffect(() => {
-        fetch(`http://localhost:8000/documents/${documentId}`)
+        authFetch(`/documents/${documentId}`)
             .then((response) => response.json())
             .then((data) => setDocument(data));
     }, [documentId]);
     useEffect(() => {
-        fetch(`http://localhost:8000/documents/${documentId}`)
+        authFetch(`/documents/${documentId}`)
             .then((response) => response.json())
             .then((data) => {
                 setDocument(data);
 
-                fetch(`http://localhost:8000/projects/${data.project_id}/documents`)
+                authFetch(`/projects/${data.project_id}/documents`)
                     .then((response) => response.json())
                     .then((documents) => setProjectDocuments(documents));
             });
@@ -36,7 +37,7 @@ export default function DocumentDetails() {
         return <div className="document-details-page">Loading...</div>;
     }
     async function handleDelete() {
-        const response = await fetch(`http://localhost:8000/documents/delete/${documentId}`, {
+        const response = await authFetch(`/documents/delete/${documentId}`, {
             method: "DELETE",
         });
 
@@ -123,7 +124,7 @@ export default function DocumentDetails() {
                     </div>
                     <div className="document-paper">
                         <iframe
-                            src={`http://localhost:8000/documents/${documentId}/file`}
+                            src={`${API_BASE}/documents/${documentId}/file`}
                             className="document-frame"
                             title={document.name}
                         />
@@ -170,7 +171,7 @@ export default function DocumentDetails() {
                     document={document}
                     onClose={() => setShowEditModal(false)}
                     onSave={async (updatedData) => {
-                        const response = await fetch(`http://localhost:8000/documents/${documentId}/edit`, {
+                        const response = await authFetch(`/documents/${documentId}/edit`, {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json",
