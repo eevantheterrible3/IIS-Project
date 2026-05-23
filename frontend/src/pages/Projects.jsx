@@ -2,6 +2,7 @@
 import "./Projects.css";
 import { useNavigate, useLocation } from "react-router-dom";
 import ProjectFormModal from "./ProjectFormModal";
+import { authFetch } from "@/lib/api";
 
 export default function Projects() {
     const [projects, setProjects] = useState([]);
@@ -20,7 +21,7 @@ export default function Projects() {
         const loggedUser = JSON.parse(localStorage.getItem("user"));
         setUser(loggedUser);
 
-        fetch(`http://localhost:8000/projects/my?user_id=${loggedUser.user_id}`)
+        authFetch("/projects/my")
             .then((response) => response.json())
             .then((data) => {
                 setProjects(data);
@@ -49,9 +50,7 @@ export default function Projects() {
         setOpenedProjectId(projectId);
 
         if (!documentsByProject[projectId]) {
-            const response = await fetch(
-                `http://localhost:8000/projects/${projectId}/documents`
-            );
+            const response = await authFetch(`/projects/${projectId}/documents`);
 
             const documents = await response.json();
 
@@ -68,13 +67,7 @@ export default function Projects() {
         return role?.toLowerCase().replaceAll("_", " ");
     }
     async function handleDeleteProject() {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const response = await fetch(
-            `http://localhost:8000/projects/${selectedProject.project_id}?user_id=${user.user_id}`,
-            {
-                method: "DELETE",
-            }
-        );
+        const response = await authFetch(`/projects/${selectedProject.project_id}`, { method: "DELETE" });
 
         if (!response.ok) {
             alert("Failed to delete project.");
@@ -90,13 +83,9 @@ export default function Projects() {
         setShowDeleteProjectModal(false);
     }
     async function handleCreateProject(projectData) {
-        const user = JSON.parse(localStorage.getItem("user"));
-
-        const response = await fetch(`http://localhost:8000/projects?user_id=${user.user_id}`, {
+        const response = await authFetch("/projects", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify(projectData),
         });
 
@@ -113,17 +102,11 @@ export default function Projects() {
         setShowAddProjectModal(false);
     }
     async function handleUpdateProject(projectData) {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const response = await fetch(
-            `http://localhost:8000/projects/${selectedProject.project_id}?user_id=${user.user_id}`,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(projectData),
-            }
-        );
+        const response = await authFetch(`/projects/${selectedProject.project_id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(projectData),
+        });
 
         if (!response.ok) {
             alert("Failed to update project.");
@@ -159,10 +142,7 @@ export default function Projects() {
                             <button
                                 className="logout-button"
                                 onClick={() => {
-                                    localStorage.removeItem("user");
-                                    localStorage.removeItem("projects");
-                                    localStorage.removeItem("selectedProject");
-
+                                    localStorage.clear();
                                     window.location.href = "/login";
                                 }}
                             >

@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String
+import uuid
+from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -6,7 +7,7 @@ from database import Base
 class User(Base):
     __tablename__ = "users"
 
-    user_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     username = Column(String(100), nullable=False)
     name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)

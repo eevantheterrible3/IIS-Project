@@ -4,10 +4,11 @@ import Sidebar from "@/components/Sidebar";
 
 export default function AppLayout() {
     const navigate = useNavigate();
+    const token = localStorage.getItem("access_token");
     const user = JSON.parse(localStorage.getItem("user") || "null");
 
     useEffect(() => {
-        if (!user) navigate("/login", { replace: true });
+        if (!token || !user) navigate("/login", { replace: true });
     }, []);
 
     function logout() {
@@ -15,7 +16,7 @@ export default function AppLayout() {
         navigate("/login");
     }
 
-    if (!user) return null;
+    if (!token || !user) return null;
 
     return (
         <div className="flex h-screen bg-slate-50 overflow-hidden">

@@ -4,7 +4,7 @@ from typing import Optional
 
 
 class SectionTemplateInTypeResponse(BaseModel):
-    section_template_id: int
+    section_template_id: str
     name: str
     content_structure: str | None = None
     system_prompt: str | None = None
@@ -27,7 +27,7 @@ class DocumentTypeUpdateRequest(BaseModel):
 
 
 class DocumentTypeResponse(BaseModel):
-    document_type_id: int
+    document_type_id: str
     name: str
     description: str | None = None
     system_prompt: str | None = None
