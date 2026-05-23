@@ -92,6 +92,47 @@ INSERT INTO allows (user_id, document_id, permission_id) VALUES
 (3, 4, 1),
 (2, 5, 1);
 
+-- Document types
+INSERT INTO document_types (document_type_id, name, description, system_prompt) VALUES
+(1, 'CV / Resume',     'Candidate curriculum vitae for job applications.',         'You are an expert HR assistant. Generate a professional CV section based on the provided candidate information. Use clear, concise language and highlight relevant experience and skills.'),
+(2, 'Job Offer',       'Formal job offer letter sent to selected candidates.',      'You are an HR specialist. Write a formal, friendly job offer section. Be precise about terms, conditions, and next steps.'),
+(3, 'Contract',        'Employment or service contract between two parties.',       'You are a legal document assistant. Write a clear, formal contract section. Use precise legal language while keeping it readable.'),
+(4, 'Project Report',  'Periodic or final report documenting project progress.',    'You are a project management assistant. Write a structured project report section based on the provided data. Be factual and concise.');
+
+-- Section templates
+INSERT INTO section_templates (section_template_id, document_type_id, name, content_structure, system_prompt, order_index) VALUES
+-- CV / Resume
+(1,  1, 'Personal Information',  'Full name, contact details, address, LinkedIn, portfolio links.',                                          'Extract and format the candidate''s personal and contact information in a clean, professional layout.',                    1),
+(2,  1, 'Professional Summary',  'A 3-5 sentence overview of the candidate''s career, key skills, and goals.',                               'Write a compelling professional summary that highlights the candidate''s strongest qualifications for the target role.',   2),
+(3,  1, 'Work Experience',       'List of previous positions: company, title, dates, and key responsibilities/achievements per role.',        'Describe each work experience entry with action verbs and measurable achievements where possible.',                       3),
+(4,  1, 'Education',             'Degrees, institutions, graduation years, and relevant coursework or honors.',                               'Format the education section clearly, listing the most recent degree first.',                                             4),
+(5,  1, 'Skills',                'Technical and soft skills grouped by category (e.g. Languages, Tools, Frameworks).',                       'List skills in a scannable format grouped by category. Prioritize skills most relevant to the job.',                    5),
+
+-- Job Offer
+(6,  2, 'Position Details',      'Job title, department, reporting line, work location, and start date.',                                    'Describe the offered position clearly and formally, including all key details about the role and team.',                  1),
+(7,  2, 'Compensation & Benefits','Salary, bonus structure, benefits (health, pension, vacation days), and any other perks.',                 'Present the compensation package in a transparent and attractive way.',                                                   2),
+(8,  2, 'Requirements',          'Required qualifications, experience, and skills expected from the candidate.',                             'List the requirements concisely. Distinguish between mandatory and preferred qualifications.',                           3),
+(9,  2, 'Application Process',   'Next steps: deadline, documents needed, interview stages, and contact person.',                            'Explain the next steps clearly so the candidate knows exactly what to do and when to expect a response.',                 4),
+
+-- Contract
+(10, 3, 'Parties',               'Full legal names, addresses, and roles of all parties entering the agreement.',                            'State the contracting parties precisely using their full legal names and relevant identifiers.',                          1),
+(11, 3, 'Terms & Duration',      'Contract type (fixed/permanent), start date, end date if applicable, and probation period.',               'Define the contractual terms and duration clearly, specifying any probation or notice period conditions.',                 2),
+(12, 3, 'Obligations',           'Responsibilities and obligations of each party: deliverables, working hours, confidentiality, etc.',        'List obligations for each party in a balanced and enforceable way. Include confidentiality and IP clauses if applicable.', 3),
+(13, 3, 'Signatures',            'Signature block with name, title, date, and space for signatures of all parties.',                         'Format the signature section formally with fields for all required signatories.',                                         4),
+
+-- Project Report
+(14, 4, 'Executive Summary',     'High-level overview of the project status, key achievements, and blockers in 1-2 paragraphs.',             'Summarize the project state concisely for a non-technical audience. Highlight what was achieved and what is at risk.',    1),
+(15, 4, 'Progress Update',       'Detailed update on completed tasks, milestones reached, and current work in progress.',                    'Describe progress against the project plan. Reference milestones and deliverables by name.',                             2),
+(16, 4, 'Risks & Issues',        'Current risks, their likelihood and impact, mitigation actions, and any open blockers.',                   'List each risk or issue clearly with its status and the action being taken to address it.',                              3),
+(17, 4, 'Next Steps',            'Planned activities for the next reporting period with owners and target dates.',                           'Outline upcoming work in a structured list with clear owners and deadlines.',                                            4);
+
+-- Link existing seed documents to document types
+UPDATE documents SET document_type_id = 1 WHERE document_id = 1;  -- Frontend Developer CV  → CV/Resume
+UPDATE documents SET document_type_id = 4 WHERE document_id = 2;  -- Interview Schedule     → Project Report
+UPDATE documents SET document_type_id = 3 WHERE document_id = 3;  -- Employment Contract    → Contract
+UPDATE documents SET document_type_id = 4 WHERE document_id = 4;  -- Website Specification  → Project Report
+UPDATE documents SET document_type_id = 2 WHERE document_id = 5;  -- Laptop Invoice         → Job Offer
+
 -- Activities
 INSERT INTO activities (activity_id, document_id, user_id, type, date) VALUES
 (1, 1, 1, 'CREATE', NOW()),
