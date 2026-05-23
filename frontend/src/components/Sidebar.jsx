@@ -1,33 +1,34 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { FileText, Sparkles, Layers, LayoutTemplate, Zap, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const navItems = [
-    { to: "/app/documents", icon: FileText, label: "Dokumenti" },
-    { to: "/app/new-document", icon: Sparkles, label: "Novi dokument" },
-    { to: "/app/document-types", icon: Layers, label: "Tipovi dokumentata" },
-    { to: "/app/section-templates", icon: LayoutTemplate, label: "Šabloni sekcija" },
-    { to: "/app/system-prompts", icon: Zap, label: "Sistemski promptovi" },
+    { to: "/app/documents", icon: FileText, label: "Documents" },
+    { to: "/app/new-document", icon: Sparkles, label: "New Document" },
+    { to: "/app/document-types", icon: Layers, label: "Document Types" },
+    { to: "/app/section-templates", icon: LayoutTemplate, label: "Section Templates" },
+    { to: "/app/system-prompts", icon: Zap, label: "System Prompts" },
 ];
 
 export default function Sidebar() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const orgName = "Mreža aktivista";
 
     return (
-        <aside className="w-56 flex flex-col border-r bg-gray-50 shrink-0">
-            <div className="p-3 border-b">
-                <Button
-                    className="w-full justify-start gap-2 bg-gray-900 hover:bg-gray-800 text-white"
-                    onClick={() => navigate("/app/new-document")}
-                >
-                    <Plus size={16} />
-                    Novi dokument
-                </Button>
+        <aside className="w-56 flex flex-col bg-slate-900 shrink-0">
+            <div className="px-4 py-5 border-b border-slate-700">
+                <span className="text-white font-bold text-lg tracking-tight">DocAssist</span>
             </div>
 
-            <nav className="flex-1 p-2 space-y-0.5">
+            <div className="px-3 pt-3 pb-2">
+                <button
+                    onClick={() => navigate("/app/new-document")}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+                >
+                    <Plus size={15} />
+                    New Document
+                </button>
+            </div>
+
+            <nav className="flex-1 px-3 pb-3 space-y-0.5">
                 {navItems.map(({ to, icon: Icon, label }) => (
                     <NavLink
                         key={to}
@@ -35,8 +36,8 @@ export default function Sidebar() {
                         className={({ isActive }) =>
                             `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
                                 isActive
-                                    ? "bg-white shadow-sm text-gray-900 font-medium"
-                                    : "text-gray-600 hover:bg-white hover:text-gray-900"
+                                    ? "bg-slate-700 text-white font-medium"
+                                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
                             }`
                         }
                     >
@@ -46,9 +47,9 @@ export default function Sidebar() {
                 ))}
             </nav>
 
-            <div className="p-3 border-t">
-                <p className="text-xs text-gray-400">
-                    Organizacija: <span className="font-medium text-gray-600">{orgName}</span>
+            <div className="px-4 py-3 border-t border-slate-700">
+                <p className="text-xs text-slate-500">
+                    Organization: <span className="text-slate-300 font-medium">Mreža aktivista</span>
                 </p>
             </div>
         </aside>

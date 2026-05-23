@@ -24,7 +24,7 @@ function App() {
                     <Route path="document-types" element={<DocumentTypesList />} />
                     <Route path="section-templates" element={<SectionTemplatesList />} />
                     <Route path="system-prompts" element={<SystemPrompts />} />
-                    <Route path="new-document" element={<div className="p-6 text-gray-400">Generisanje dokumenta — uskoro.</div>} />
+                    <Route path="new-document" element={<div className="p-6 text-gray-400">Document generation — coming soon.</div>} />
                 </Route>
 
                 <Route path="/" element={<Navigate to="/app/documents" replace />} />
