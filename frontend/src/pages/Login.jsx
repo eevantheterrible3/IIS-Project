@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./Login.css";
+import { authFetch } from "@/lib/api";
 
 export default function Login() {
     const [email, setEmail] = useState("");
@@ -8,11 +9,9 @@ export default function Login() {
     async function handleLogin(e) {
         e.preventDefault();
 
-        const response = await fetch("http://localhost:8000/auth/login", {
+        const response = await authFetch("/auth/login", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
         });
 
@@ -23,40 +22,24 @@ export default function Login() {
 
         const data = await response.json();
 
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("refresh_token", data.refresh_token);
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("projects", JSON.stringify(data.projects));
 
-        const selectedProject = data.projects.find(
-            (project) => project.role_name === "PROJECT_MANAGER"
+        const priority = ["PROJECT_MANAGER", "ADMIN", "TEAM_MEMBER"];
+        const selected = priority.reduce(
+            (found, role) => found || data.projects.find(p => p.role_name === role),
+            null
         );
 
-        if (selectedProject) {
-            localStorage.setItem("selectedProject", JSON.stringify(selectedProject));
-            window.location.href = "/projects";
+        if (!selected) {
+            alert("User does not have a valid role.");
             return;
         }
 
-        const adminProject = data.projects.find(
-            (project) => project.role_name === "ADMIN"
-        );
-
-        if (adminProject) {
-            localStorage.setItem("selectedProject", JSON.stringify(adminProject));
-            window.location.href = "/projects";
-            return;
-        }
-
-        const teamMemberProject = data.projects.find(
-            (project) => project.role_name === "TEAM_MEMBER"
-        );
-
-        if (teamMemberProject) {
-            localStorage.setItem("selectedProject", JSON.stringify(teamMemberProject));
-            window.location.href = "/projects";
-            return;
-        }
-
-        alert("User does not have a valid role.");
+        localStorage.setItem("selectedProject", JSON.stringify(selected));
+        window.location.href = "/projects";
     }
 
     return (
@@ -69,16 +52,14 @@ export default function Login() {
                         type="email"
                         placeholder="Email"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={e => setEmail(e.target.value)}
                     />
-
                     <input
                         type="password"
                         placeholder="Password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={e => setPassword(e.target.value)}
                     />
-
                     <button type="submit">Log in</button>
                 </form>
             </div>

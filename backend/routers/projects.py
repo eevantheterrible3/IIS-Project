@@ -1,69 +1,66 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.dependencies import get_current_user
 from database import get_db
-from repositories.project_repository import ProjectRepository
+from models.user import User
 from repositories.document_repository import DocumentRepository
-from services.project_service import ProjectService
-from services.document_service import DocumentService
-from schemas.project_schema import ProjectListResponse
+from repositories.project_repository import ProjectRepository
 from schemas.all_document_schema import DocumentListResponse
-from schemas.project_schema import ProjectCreateRequest, ProjectUpdateRequest
+from schemas.project_schema import ProjectCreateRequest, ProjectListResponse, ProjectUpdateRequest
+from services.document_service import DocumentService
+from services.project_service import ProjectService
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
 
 @router.get("/my", response_model=List[ProjectListResponse])
 async def get_my_projects(
-    user_id: int = Query(...),
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    project_repository = ProjectRepository(db)
-    project_service = ProjectService(project_repository)
-
-    return await project_service.get_projects_for_user(user_id)
+    service = ProjectService(ProjectRepository(db))
+    return await service.get_projects_for_user(current_user.user_id)
 
 
 @router.get("/{project_id}/documents", response_model=List[DocumentListResponse])
 async def get_project_documents(
-    project_id: int,
-    db: AsyncSession = Depends(get_db)
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    document_repository = DocumentRepository(db)
-    document_service = DocumentService(document_repository)
+    service = DocumentService(DocumentRepository(db))
+    return await service.get_documents_for_project(project_id)
 
-    return await document_service.get_documents_for_project(project_id)
 
-@router.delete("/{project_id}")
-async def delete_project(
-    project_id: int,
-    user_id: int,
-    db: AsyncSession = Depends(get_db)
-):
-    project_repository = ProjectRepository(db)
-    project_service = ProjectService(project_repository)
-
-    return await project_service.delete_project(project_id, user_id)
 @router.post("")
 async def create_project(
     request: ProjectCreateRequest,
-    user_id: int,
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    project_repository = ProjectRepository(db)
-    project_service = ProjectService(project_repository)
+    service = ProjectService(ProjectRepository(db))
+    return await service.create_project(request, current_user.user_id)
 
-    return await project_service.create_project(request, user_id)
+
 @router.put("/{project_id}")
 async def update_project(
-    project_id: int,
+    project_id: str,
     request: ProjectUpdateRequest,
-    user_id: int,
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    project_repository = ProjectRepository(db)
-    project_service = ProjectService(project_repository)
+    service = ProjectService(ProjectRepository(db))
+    return await service.update_project(project_id, request, current_user.user_id)
 
-    return await project_service.update_project(project_id, request, user_id)
+
+@router.delete("/{project_id}")
+async def delete_project(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = ProjectService(ProjectRepository(db))
+    return await service.delete_project(project_id, current_user.user_id)

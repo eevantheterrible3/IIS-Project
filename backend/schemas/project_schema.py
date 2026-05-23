@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class ProjectListResponse(BaseModel):
-    project_id: int
+    project_id: str
     name: str
     description: str | None = None
     status: str

@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Pencil, Trash2, FileText, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { authFetch } from "@/lib/api";
 
 function timeAgo(dateStr) {
     if (!dateStr) return "—";
@@ -28,7 +28,6 @@ const statusColors = {
 
 export default function DocumentsList() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
 
     const [documents, setDocuments] = useState([]);
     const [documentTypes, setDocumentTypes] = useState([]);
@@ -40,24 +39,24 @@ export default function DocumentsList() {
 
     useEffect(() => {
         fetchDocuments();
-        fetch("http://localhost:8000/document-types").then(r => r.json()).then(setDocumentTypes);
+        authFetch("/document-types").then(r => r.json()).then(setDocumentTypes);
         setProjects(JSON.parse(localStorage.getItem("projects") || "[]"));
     }, []);
 
     async function fetchDocuments() {
-        const res = await fetch(`http://localhost:8000/documents/my?user_id=${user.user_id}`);
+        const res = await authFetch("/documents/my");
         setDocuments(await res.json());
     }
 
     async function handleCreate() {
         if (!createForm.name || !createForm.document_type_id || !createForm.project_id) return;
-        const res = await fetch(`http://localhost:8000/documents?user_id=${user.user_id}`, {
+        const res = await authFetch("/documents", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 name: createForm.name,
-                document_type_id: parseInt(createForm.document_type_id),
-                project_id: parseInt(createForm.project_id),
+                document_type_id: createForm.document_type_id,
+                project_id: createForm.project_id,
                 user_prompt: createForm.user_prompt || null,
             }),
         });
@@ -68,7 +67,7 @@ export default function DocumentsList() {
     }
 
     async function handleDelete() {
-        const res = await fetch(`http://localhost:8000/documents/delete/${deleteTarget.document_id}`, { method: "DELETE" });
+        const res = await authFetch(`/documents/delete/${deleteTarget.document_id}`, { method: "DELETE" });
         if (!res.ok) { alert("Failed to delete document."); return; }
         setDocuments(d => d.filter(x => x.document_id !== deleteTarget.document_id));
         setDeleteTarget(null);
@@ -81,7 +80,6 @@ export default function DocumentsList() {
 
     return (
         <div className="p-8">
-            {/* Page header */}
             <div className="flex items-start justify-between mb-8">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Documents</h1>
@@ -103,7 +101,6 @@ export default function DocumentsList() {
                 </div>
             </div>
 
-            {/* Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <table className="w-full text-sm">
                     <thead>
@@ -175,7 +172,6 @@ export default function DocumentsList() {
                 </table>
             </div>
 
-            {/* Create modal */}
             <Dialog open={showCreate} onOpenChange={setShowCreate}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
@@ -220,7 +216,6 @@ export default function DocumentsList() {
                 </DialogContent>
             </Dialog>
 
-            {/* Delete confirm */}
             <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader><DialogTitle>Delete document</DialogTitle></DialogHeader>

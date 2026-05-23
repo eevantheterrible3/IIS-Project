@@ -18,8 +18,8 @@ class SectionTemplateUpdateRequest(BaseModel):
 
 
 class SectionTemplateResponse(BaseModel):
-    section_template_id: int
-    document_type_id: int | None = None
+    section_template_id: str
+    document_type_id: str | None = None
     name: str
     content_structure: str | None = None
     system_prompt: str | None = None

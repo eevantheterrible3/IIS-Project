@@ -1,15 +1,15 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+import uuid
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-
 from database import Base
 
 
 class SectionTemplate(Base):
     __tablename__ = "section_templates"
 
-    section_template_id = Column(Integer, primary_key=True, index=True)
-    document_type_id = Column(Integer, ForeignKey("document_types.document_type_id", ondelete="SET NULL"), nullable=True)
+    section_template_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    document_type_id = Column(String(36), ForeignKey("document_types.document_type_id", ondelete="SET NULL"), nullable=True)
     name = Column(String(150), nullable=False)
     content_structure = Column(Text)
     system_prompt = Column(Text)

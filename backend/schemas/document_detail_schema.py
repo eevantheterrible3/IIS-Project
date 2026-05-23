@@ -12,7 +12,7 @@ class DocumentTagResponse(BaseModel):
 
 
 class DocumentDetailResponse(BaseModel):
-    document_id: int
+    document_id: str
     name: str
     user_prompt: str | None = None
     created_at: datetime | None = None
@@ -23,4 +23,4 @@ class DocumentDetailResponse(BaseModel):
 
     tags: list[DocumentTagResponse]
     metadata: list[DocumentMetadataResponse]
-    project_id: int
+    project_id: str
