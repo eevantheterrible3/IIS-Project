@@ -9,3 +9,8 @@ from .activity import Activity
 from .tag import Tag
 from .is_marked import IsMarked
 from .allows import Allows
+from .document_type import DocumentType
+from .section_template import SectionTemplate
+from .document_section import DocumentSection
+from .document_version import DocumentVersion
+from .document_rating import DocumentRating

@@ -11,19 +11,24 @@ class Document(Base):
 
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     project_id = Column(Integer, ForeignKey("projects.project_id"), nullable=False)
+    document_type_id = Column(Integer, ForeignKey("document_types.document_type_id", ondelete="SET NULL"), nullable=True)
 
     name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=True)
     user_prompt = Column(Text)
     status = Column(String(50), nullable=False, default="draft")
 
-
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
+
     user = relationship("User", back_populates="documents")
     project = relationship("Project", back_populates="documents")
+    document_type = relationship("DocumentType", back_populates="documents")
 
     metadata_items = relationship("DocumentMetadata", back_populates="document", cascade="all, delete-orphan")
     activities = relationship("Activity", back_populates="document", cascade="all, delete-orphan")
     tags = relationship("IsMarked", back_populates="document", cascade="all, delete-orphan")
     allowed_users = relationship("Allows", back_populates="document", cascade="all, delete-orphan")
+    sections = relationship("DocumentSection", back_populates="document", cascade="all, delete-orphan")
+    versions = relationship("DocumentVersion", back_populates="document", cascade="all, delete-orphan")
+    ratings = relationship("DocumentRating", back_populates="document", cascade="all, delete-orphan")
