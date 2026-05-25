@@ -7,8 +7,8 @@ from database import Base
 
 
 class ResourceStatus(str, enum.Enum):
-    aktivan = "aktivan"
-    neaktivan = "neaktivan"
+    active = "active"
+    not_active = "not_active"
 
 
 class Resource(Base):
@@ -18,7 +18,7 @@ class Resource(Base):
     name = Column(String, nullable=False)
     resource_type = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    status = Column(Enum(ResourceStatus), default=ResourceStatus.aktivan)
+    status = Column(Enum(ResourceStatus), default=ResourceStatus.active)
     total_quantity = Column(Integer, default=1)
 
     task_resources = relationship("TaskResource", back_populates="resource")

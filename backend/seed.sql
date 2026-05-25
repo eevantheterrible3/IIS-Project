@@ -92,6 +92,70 @@ INSERT INTO activities (activity_id, document_id, user_id, type, date) VALUES
 (5, 3, 3, 'CREATE', NOW()),
 (6, 4, 1, 'CREATE', NOW()),
 (7, 5, 4, 'CREATE', NOW());
+INSERT INTO task_workflow (task_workflow_id, name, created_by, created_at) VALUES
+(1, 'Terenski', 1, NOW()),
+(2, 'Tehnički', 1, NOW()),
+(3, 'Hitan',    1, NOW());
+
+INSERT INTO task_workflow_step (step_id, task_workflow_id, status_name, next_step_id, is_first, is_last) VALUES
+-- Terenski: Kreiran → U toku → Na reviziji → Završeno
+(1,  1, 'Kreiran',     NULL, true,  false),
+(2,  1, 'U toku',      NULL, false, false),
+(3,  1, 'Na reviziji', NULL, false, false),
+(4,  1, 'Završeno',    NULL, false, true),
+-- Tehnički: Kreiran → Razvoj → Testiranje → Na reviziji → Završeno
+(5,  2, 'Kreiran',     NULL, true,  false),
+(6,  2, 'Razvoj',      NULL, false, false),
+(7,  2, 'Testiranje',  NULL, false, false),
+(8,  2, 'Na reviziji', NULL, false, false),
+(9,  2, 'Završeno',    NULL, false, true),
+-- Hitan: Kreiran → U toku → Završeno
+(10, 3, 'Kreiran',     NULL, true,  false),
+(11, 3, 'U toku',      NULL, false, false),
+(12, 3, 'Završeno',    NULL, false, true);
+
+UPDATE task_workflow_step SET next_step_id = 2  WHERE step_id = 1;
+UPDATE task_workflow_step SET next_step_id = 3  WHERE step_id = 2;
+UPDATE task_workflow_step SET next_step_id = 4  WHERE step_id = 3;
+UPDATE task_workflow_step SET next_step_id = 6  WHERE step_id = 5;
+UPDATE task_workflow_step SET next_step_id = 7  WHERE step_id = 6;
+UPDATE task_workflow_step SET next_step_id = 8  WHERE step_id = 7;
+UPDATE task_workflow_step SET next_step_id = 9  WHERE step_id = 8;
+UPDATE task_workflow_step SET next_step_id = 11 WHERE step_id = 10;
+UPDATE task_workflow_step SET next_step_id = 12 WHERE step_id = 11;
+
+INSERT INTO resource (resource_id, name, resource_type, description, status, total_quantity) VALUES
+(1, 'Skener Fujitsu fi-7160', 'Oprema',  'Skener za digitalizaciju dokumenata', 'active',     3),
+(2, 'Adobe Acrobat Pro',      'Softver', 'Softver za rad sa PDF fajlovima',      'active',     5),
+(3, 'Laptop Dell Latitude',   'Oprema',  'Laptop za terenski rad',               'active',     4),
+(4, 'Projektor Epson EB-X51', 'Oprema',  'Projektor za prezentacije',            'not_active', 2),
+(5, 'Microsoft 365',          'Softver', 'Office paket licenci',                 'active',     10);
+
+INSERT INTO task (task_id, name, description, priority, task_workflow_id, current_step_id, deadline, assigned_user_id, project_id, created_at, last_updated_at) VALUES
+(1, 'Nabavka skenera',           'Nabaviti skener visoke rezolucije za digitalizaciju arhive',                     'high',   2, 9, '2026-04-10', 4, 1, '2026-04-01 09:00:00', '2026-04-10 12:00:00'),
+(2, 'Skeniranje dok. 2010-2015', 'Skenirati sve papirne dokumente iz arhivskog registra 2010-2015. Min. 300 DPI.', 'high',   1, 2, '2026-05-01', 2, 1, '2026-04-20 09:00:00', '2026-04-22 10:32:00'),
+(3, 'Indeksiranje fajlova',      'Indeksirati sve skenirane fajlove i uneti ih u digitalni registar',             'high',   3, 10,'2026-04-20', 4, 1, '2026-04-10 08:00:00', '2026-04-10 08:00:00'),
+(4, 'Priprema izveštaja',        'Pripremiti izveštaj o napretku digitalizacije za menadžment',                   'low',    2, 5, '2026-06-01', 3, 2, '2026-05-01 09:00:00', '2026-05-01 09:00:00');
+
+INSERT INTO subtask (subtask_id, task_id, name, deadline, current_status, assigned_user_id, created_at) VALUES
+-- Nabavka skenera (task 1) - završen 2/2
+(1, 1, 'Odabir modela skenera', '2026-04-05', 'done',        4, '2026-04-01 09:00:00'),
+(2, 1, 'Nabavka i instalacija', '2026-04-10', 'done',        4, '2026-04-01 09:00:00'),
+-- Skeniranje (task 2) - u toku 3/5
+(3, 2, 'Pregled dokumenata',    '2026-04-22', 'done',        2, '2026-04-20 09:00:00'),
+(4, 2, 'Skeniranje batch 1',    '2026-04-25', 'done',        2, '2026-04-20 09:00:00'),
+(5, 2, 'Skeniranje batch 2',    '2026-04-28', 'done',        2, '2026-04-20 09:00:00'),
+(6, 2, 'Skeniranje batch 3',    '2026-05-01', 'in_progress', 2, '2026-04-20 09:00:00'),
+(7, 2, 'Verifikacija kvaliteta','2026-05-02', 'created',     4, '2026-04-20 09:00:00'),
+-- Priprema izveštaja (task 4)
+(8, 4, 'Prikupiti statistike',  '2026-05-20', 'in_progress', 3, '2026-05-01 09:00:00'),
+(9, 4, 'Napisati izveštaj',     '2026-05-28', 'created',     3, '2026-05-01 09:00:00');
+
+INSERT INTO task_resource (task_id, resource_id, quantity, reserved_from, reserved_until, status) VALUES
+(1, 1, 1, '2026-04-01', '2026-04-10', 'free'),
+(2, 3, 1, '2026-04-20', '2026-05-01', 'in_use'),
+(2, 2, 1, '2026-04-20', '2026-05-01', 'reserved');
+
 UPDATE projects
 SET name = 'Summer Internship 2026',
     description = 'Project for organizing summer internship applications.',
