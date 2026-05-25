@@ -1,32 +1,75 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+import json
+from typing import List
 
-from database import get_db
-from repositories.document_repository import DocumentRepository
-from services.document_service import DocumentService
-from schemas.document_detail_schema import DocumentDetailResponse
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
-from fastapi import APIRouter, Depends, HTTPException
-from schemas.document_update_schema import UpdateDocumentRequest
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.dependencies import get_current_user
+from database import get_db
+from models.document_version import DocumentVersion
+from models.user import User
+from repositories.document_repository import DocumentRepository
+from repositories.document_section_repository import DocumentSectionRepository
+from repositories.document_version_repository import DocumentVersionRepository
+from repositories.section_template_repository import SectionTemplateRepository
+from schemas.all_document_schema import DocumentCreateRequest, DocumentListItemResponse
+from schemas.document_detail_schema import DocumentDetailResponse
+from schemas.document_section_schema import DocumentSectionResponse
+from schemas.document_update_schema import UpdateDocumentRequest
+from schemas.document_version_schema import DocumentSaveRequest, DocumentVersionResponse
+from services.document_section_service import DocumentSectionService
+from services.document_service import DocumentService
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
+@router.get("/my", response_model=List[DocumentListItemResponse])
+async def get_my_documents(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = DocumentService(DocumentRepository(db))
+    return await service.get_documents_for_user(current_user.user_id)
+
+
+@router.post("", response_model=DocumentListItemResponse)
+async def create_document(
+    request: DocumentCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    section_templates = await SectionTemplateRepository(db).get_by_document_type(request.document_type_id)
+    service = DocumentService(DocumentRepository(db))
+    doc = await service.create_document(request, current_user.user_id, section_templates)
+    return DocumentListItemResponse(
+        document_id=doc.document_id,
+        name=doc.name,
+        user_prompt=doc.user_prompt,
+        document_type_id=doc.document_type_id,
+        document_type_name=None,
+        status=doc.status,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+    )
+
+
 @router.get("/{document_id}", response_model=DocumentDetailResponse)
 async def get_document_details(
-    document_id: int,
-    db: AsyncSession = Depends(get_db)
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    document_repository = DocumentRepository(db)
-    document_service = DocumentService(document_repository)
+    service = DocumentService(DocumentRepository(db))
+    return await service.get_document_details(document_id)
 
-    return await document_service.get_document_details(document_id)
+
 @router.get("/{document_id}/file")
 async def get_document_file(
-    document_id: int,
-    db: AsyncSession = Depends(get_db)
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     document_repository = DocumentRepository(db)
     document = await document_repository.get_document_details(document_id)
@@ -35,38 +78,96 @@ async def get_document_file(
         raise HTTPException(status_code=404, detail="Document file not found")
 
     file_path = Path(document.file_path)
-
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File does not exist")
 
-    return FileResponse(
-        path=file_path,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": "inline"
-        }
-    )
+    return FileResponse(path=file_path, media_type="application/pdf", headers={"Content-Disposition": "inline"})
+
 
 @router.delete("/delete/{document_id}")
 async def delete_document(
-    document_id: int,
-    db: AsyncSession = Depends(get_db)
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    document_repository = DocumentRepository(db)
-    document_service = DocumentService(document_repository)
+    service = DocumentService(DocumentRepository(db))
+    return await service.delete_document(document_id)
 
-    return await document_service.delete_document(document_id)
 
 @router.put("/{document_id}/edit", response_model=DocumentDetailResponse)
-async def update_document_tags_and_metadata(
-    document_id: int,
+async def update_document(
+    document_id: str,
     request: UpdateDocumentRequest,
-    db: AsyncSession = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    document_repository = DocumentRepository(db)
-    document_service = DocumentService(document_repository)
+    service = DocumentService(DocumentRepository(db))
+    return await service.update_document_tags_and_metadata(document_id, request)
 
-    return await document_service.update_document_tags_and_metadata(
-        document_id,
-        request
+
+@router.get("/{document_id}/sections", response_model=List[DocumentSectionResponse])
+async def get_document_sections(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = DocumentSectionService(DocumentSectionRepository(db))
+    return await service.get_by_document(document_id)
+
+
+@router.post("/{document_id}/save")
+async def save_document(
+    document_id: str,
+    request: DocumentSaveRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    section_repo = DocumentSectionRepository(db)
+    for item in request.sections:
+        section = await section_repo.get_by_id(item.document_section_id)
+        if section:
+            section.content = item.content
+            await section_repo.update(section)
+
+    all_sections = await section_repo.get_by_document(document_id)
+    snapshot = json.dumps([
+        {
+            "section_name": s.section_template.name if s.section_template else f"Section {i + 1}",
+            "content": s.content or "",
+            "order_index": s.order_index,
+        }
+        for i, s in enumerate(all_sections)
+    ])
+
+    version_repo = DocumentVersionRepository(db)
+    latest = await version_repo.get_latest_number(document_id)
+    version = DocumentVersion(
+        document_id=document_id,
+        author_id=current_user.user_id,
+        version_number=latest + 1,
+        full_content=snapshot,
+        note=request.note,
     )
+    created = await version_repo.create(version)
+    return {"version_number": created.version_number}
+
+
+@router.get("/{document_id}/versions", response_model=List[DocumentVersionResponse])
+async def get_document_versions(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = DocumentVersionRepository(db)
+    versions = await repo.get_by_document(document_id)
+    return [
+        DocumentVersionResponse(
+            document_version_id=v.document_version_id,
+            version_number=v.version_number,
+            note=v.note,
+            full_content=v.full_content,
+            created_at=v.created_at,
+            author_name=f"{v.author.name} {v.author.last_name}" if v.author else None,
+        )
+        for v in versions
+    ]
