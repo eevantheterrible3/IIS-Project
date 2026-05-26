@@ -20,3 +20,4 @@ class User(Base):
     allowed_permissions = relationship("Allows", back_populates="user")
     document_versions = relationship("DocumentVersion", back_populates="author")
     document_ratings = relationship("DocumentRating", back_populates="user")
+    workflows = relationship("Workflow", back_populates="creator")
