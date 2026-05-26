@@ -15,7 +15,7 @@ class TaskWorkflowRepository:
         )
         return result.scalars().all()
 
-    async def get_by_id(self, workflow_id: int):
+    async def get_by_id(self, workflow_id: str):
         result = await self.db.execute(
             select(TaskWorkflow)
             .where(TaskWorkflow.task_workflow_id == workflow_id)

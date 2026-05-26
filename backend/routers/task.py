@@ -12,13 +12,13 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
 
 @router.get("/", response_model=List[TaskListResponse])
-async def get_tasks(project_id: int = Query(...), db: AsyncSession = Depends(get_db)):
+async def get_tasks(project_id: str = Query(...), db: AsyncSession = Depends(get_db)):
     service = TaskService(TaskRepository(db))
     return await service.get_by_project(project_id)
 
 
 @router.get("/{task_id}", response_model=TaskDetailResponse)
-async def get_task(task_id: int, db: AsyncSession = Depends(get_db)):
+async def get_task(task_id: str, db: AsyncSession = Depends(get_db)):
     service = TaskService(TaskRepository(db))
     return await service.get_by_id(task_id)
 
@@ -30,12 +30,12 @@ async def create_task(data: CreateTaskRequest, db: AsyncSession = Depends(get_db
 
 
 @router.put("/{task_id}", response_model=TaskDetailResponse)
-async def update_task(task_id: int, data: UpdateTaskRequest, db: AsyncSession = Depends(get_db)):
+async def update_task(task_id: str, data: UpdateTaskRequest, db: AsyncSession = Depends(get_db)):
     service = TaskService(TaskRepository(db))
     return await service.update(task_id, data)
 
 
 @router.delete("/{task_id}")
-async def delete_task(task_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_task(task_id: str, db: AsyncSession = Depends(get_db)):
     service = TaskService(TaskRepository(db))
     return await service.delete(task_id)

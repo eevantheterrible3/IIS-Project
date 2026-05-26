@@ -1,7 +1,8 @@
+import uuid
 import enum
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, String, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 
 from database import Base
@@ -16,13 +17,13 @@ class SubtaskStatus(str, enum.Enum):
 class Subtask(Base):
     __tablename__ = "subtask"
 
-    subtask_id = Column(Integer, primary_key=True, index=True)
-    task_id = Column(Integer, ForeignKey("task.task_id"))
+    subtask_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    task_id = Column(String(36), ForeignKey("task.task_id"))
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     deadline = Column(DateTime, nullable=True)
     current_status = Column(Enum(SubtaskStatus), default=SubtaskStatus.created)
-    assigned_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    assigned_user_id = Column(String(36), ForeignKey("users.user_id"), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
 
     task = relationship("Task", back_populates="subtasks")

@@ -9,7 +9,6 @@ from .activity import Activity
 from .tag import Tag
 from .is_marked import IsMarked
 from .allows import Allows
-<<<<<<< HEAD
 from .task_workflow import TaskWorkflow
 from .task_workflow_step import TaskWorkflowStep
 from .task import Task
@@ -17,10 +16,8 @@ from .subtask import Subtask
 from .task_status_history import TaskStatusHistory
 from .resource import Resource
 from .task_resource import TaskResource
-=======
 from .document_type import DocumentType
 from .section_template import SectionTemplate
 from .document_section import DocumentSection
 from .document_version import DocumentVersion
 from .document_rating import DocumentRating
->>>>>>> a98bf5416cd8c47de942620c2ddd40be693dc9a5

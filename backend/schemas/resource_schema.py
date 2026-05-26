@@ -18,7 +18,7 @@ class UpdateResourceRequest(BaseModel):
 
 
 class ResourceResponse(BaseModel):
-    resource_id: int
+    resource_id: str
     name: str
     resource_type: str
     description: str | None

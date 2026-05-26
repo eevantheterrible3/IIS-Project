@@ -13,15 +13,15 @@ class StepInWorkflowRequest(BaseModel):
 
 class CreateTaskWorkflowRequest(BaseModel):
     name: str
-    created_by: int
+    created_by: str
     steps: list[StepInWorkflowRequest] = []
 
 
 class TaskWorkflowResponse(BaseModel):
-    task_workflow_id: int
+    task_workflow_id: str
     name: str
     created_at: datetime
-    created_by: int
+    created_by: str
     steps: list[TaskWorkflowStepResponse]
 
     model_config = {"from_attributes": True}

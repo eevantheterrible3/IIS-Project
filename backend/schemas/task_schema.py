@@ -9,10 +9,10 @@ class CreateTaskRequest(BaseModel):
     name: str
     description: str | None = None
     priority: TaskPriority | None = None
-    task_workflow_id: int
+    task_workflow_id: str
     deadline: datetime | None = None
-    assigned_user_id: int | None = None
-    project_id: int
+    assigned_user_id: str | None = None
+    project_id: str
 
 
 class UpdateTaskRequest(BaseModel):
@@ -20,31 +20,31 @@ class UpdateTaskRequest(BaseModel):
     description: str | None = None
     priority: TaskPriority | None = None
     deadline: datetime | None = None
-    assigned_user_id: int | None = None
-    current_step_id: int | None = None
+    assigned_user_id: str | None = None
+    current_step_id: str | None = None
 
 
 class TaskListResponse(BaseModel):
-    task_id: int
+    task_id: str
     name: str
     priority: TaskPriority | None
     deadline: datetime | None
-    current_step_id: int | None
-    assigned_user_id: int | None
+    current_step_id: str | None
+    assigned_user_id: str | None
 
     model_config = {"from_attributes": True}
 
 
 class TaskDetailResponse(BaseModel):
-    task_id: int
+    task_id: str
     name: str
     description: str | None
     priority: TaskPriority | None
-    task_workflow_id: int
-    current_step_id: int | None
+    task_workflow_id: str
+    current_step_id: str | None
     deadline: datetime | None
-    assigned_user_id: int | None
-    project_id: int
+    assigned_user_id: str | None
+    project_id: str
     created_at: datetime
     last_updated_at: datetime
 

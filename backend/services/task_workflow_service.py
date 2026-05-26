@@ -14,7 +14,7 @@ class TaskWorkflowService:
         workflows = await self.repository.get_all()
         return [TaskWorkflowResponse.model_validate(w) for w in workflows]
 
-    async def get_by_id(self, workflow_id: int) -> TaskWorkflowResponse:
+    async def get_by_id(self, workflow_id: str) -> TaskWorkflowResponse:
         workflow = await self.repository.get_by_id(workflow_id)
         if workflow is None:
             raise HTTPException(status_code=404, detail="Workflow not found")
@@ -51,7 +51,7 @@ class TaskWorkflowService:
         result = await self.repository.update(workflow)
         return TaskWorkflowResponse.model_validate(result)
 
-    async def delete(self, workflow_id: int):
+    async def delete(self, workflow_id: str):
         workflow = await self.repository.get_by_id(workflow_id)
         if workflow is None:
             raise HTTPException(status_code=404, detail="Workflow not found")

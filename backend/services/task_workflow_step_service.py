@@ -8,11 +8,11 @@ class TaskWorkflowStepService:
     def __init__(self, repository):
         self.repository = repository
 
-    async def get_by_workflow(self, workflow_id: int) -> list[TaskWorkflowStepResponse]:
+    async def get_by_workflow(self, workflow_id: str) -> list[TaskWorkflowStepResponse]:
         steps = await self.repository.get_by_workflow(workflow_id)
         return [TaskWorkflowStepResponse.model_validate(s) for s in steps]
 
-    async def get_by_id(self, step_id: int) -> TaskWorkflowStepResponse:
+    async def get_by_id(self, step_id: str) -> TaskWorkflowStepResponse:
         step = await self.repository.get_by_id(step_id)
         if step is None:
             raise HTTPException(status_code=404, detail="Step not found")
@@ -29,7 +29,7 @@ class TaskWorkflowStepService:
         result = await self.repository.create(step)
         return TaskWorkflowStepResponse.model_validate(result)
 
-    async def delete(self, step_id: int):
+    async def delete(self, step_id: str):
         step = await self.repository.get_by_id(step_id)
         if step is None:
             raise HTTPException(status_code=404, detail="Step not found")

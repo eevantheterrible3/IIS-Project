@@ -24,12 +24,12 @@ async def create_resource(data: CreateResourceRequest, db: AsyncSession = Depend
 
 
 @router.put("/{resource_id}", response_model=ResourceResponse)
-async def update_resource(resource_id: int, data: UpdateResourceRequest, db: AsyncSession = Depends(get_db)):
+async def update_resource(resource_id: str, data: UpdateResourceRequest, db: AsyncSession = Depends(get_db)):
     service = ResourceService(ResourceRepository(db))
     return await service.update(resource_id, data)
 
 
 @router.delete("/{resource_id}")
-async def delete_resource(resource_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_resource(resource_id: str, db: AsyncSession = Depends(get_db)):
     service = ResourceService(ResourceRepository(db))
     return await service.delete(resource_id)

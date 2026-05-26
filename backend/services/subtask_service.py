@@ -8,11 +8,11 @@ class SubtaskService:
     def __init__(self, repository):
         self.repository = repository
 
-    async def get_by_task(self, task_id: int) -> list[SubtaskResponse]:
+    async def get_by_task(self, task_id: str) -> list[SubtaskResponse]:
         subtasks = await self.repository.get_by_task(task_id)
         return [SubtaskResponse.model_validate(s) for s in subtasks]
 
-    async def get_by_id(self, subtask_id: int) -> SubtaskResponse:
+    async def get_by_id(self, subtask_id: str) -> SubtaskResponse:
         subtask = await self.repository.get_by_id(subtask_id)
         if subtask is None:
             raise HTTPException(status_code=404, detail="Subtask not found")
@@ -46,7 +46,7 @@ class SubtaskService:
         result = await self.repository.update(subtask)
         return SubtaskResponse.model_validate(result)
 
-    async def delete(self, subtask_id: int):
+    async def delete(self, subtask_id: str):
         subtask = await self.repository.get_by_id(subtask_id)
         if subtask is None:
             raise HTTPException(status_code=404, detail="Subtask not found")

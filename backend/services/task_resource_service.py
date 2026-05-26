@@ -8,7 +8,7 @@ class TaskResourceService:
     def __init__(self, repository):
         self.repository = repository
 
-    async def get_by_task(self, task_id: int) -> list[TaskResourceResponse]:
+    async def get_by_task(self, task_id: str) -> list[TaskResourceResponse]:
         task_resources = await self.repository.get_by_task(task_id)
         return [TaskResourceResponse.model_validate(tr) for tr in task_resources]
 
@@ -41,7 +41,7 @@ class TaskResourceService:
         result = await self.repository.update(task_resource)
         return TaskResourceResponse.model_validate(result)
 
-    async def delete(self, task_id: int, resource_id: int):
+    async def delete(self, task_id: int, resource_id: str):
         task_resource = await self.repository.get_by_ids(task_id, resource_id)
         if task_resource is None:
             raise HTTPException(status_code=404, detail="Task resource not found")

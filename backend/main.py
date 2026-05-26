@@ -11,6 +11,7 @@ from routers.subtask import router as subtask_router
 from routers.document_types import router as document_types_router
 from routers.section_templates import router as section_templates_router
 from routers.document_sections import router as document_sections_router
+from routers.project_realization import router as project_realization_router
 
 app = FastAPI(title="IIS API")
 app.include_router(auth_router)
@@ -23,6 +24,7 @@ app.include_router(subtask_router)
 app.include_router(document_types_router)
 app.include_router(section_templates_router)
 app.include_router(document_sections_router)
+app.include_router(project_realization_router)
 
 app.add_middleware(
     CORSMiddleware,

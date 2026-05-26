@@ -8,13 +8,13 @@ class TaskRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_project(self, project_id: int):
+    async def get_by_project(self, project_id: str):
         result = await self.db.execute(
             select(Task).where(Task.project_id == project_id)
         )
         return result.scalars().all()
 
-    async def get_by_id(self, task_id: int):
+    async def get_by_id(self, task_id: str):
         result = await self.db.execute(
             select(Task).where(Task.task_id == task_id)
         )

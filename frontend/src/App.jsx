@@ -8,6 +8,11 @@ import DocumentView from "./pages/app/DocumentView";
 import DocumentTypesList from "./pages/app/DocumentTypesList";
 import SectionTemplatesList from "./pages/app/SectionTemplatesList";
 import SystemPrompts from "./pages/app/SystemPrompts";
+import ProjectRealizationLayout from "./layouts/ProjectRealizationLayout";
+import PRProjects from "./pages/project_realization/Projects";
+import PRProjectDetail from "./pages/project_realization/ProjectDetail";
+import PRNewTask from "./pages/project_realization/NewTask";
+import PRResources from "./pages/project_realization/Resources";
 
 function App() {
     return (
@@ -25,6 +30,14 @@ function App() {
                     <Route path="section-templates" element={<SectionTemplatesList />} />
                     <Route path="system-prompts" element={<SystemPrompts />} />
                     <Route path="new-document" element={<div className="p-6 text-gray-400">Document generation — coming soon.</div>} />
+                </Route>
+
+                <Route path="/app/project-realization" element={<ProjectRealizationLayout />}>
+                    <Route index element={<Navigate to="/app/project-realization/projects" replace />} />
+                    <Route path="projects" element={<PRProjects />} />
+                    <Route path="projects/:project_id" element={<PRProjectDetail />} />
+                    <Route path="projects/:project_id/new-task" element={<PRNewTask />} />
+                    <Route path="resources" element={<PRResources />} />
                 </Route>
 
                 <Route path="/" element={<Navigate to="/app/documents" replace />} />

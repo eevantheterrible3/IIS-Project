@@ -8,11 +8,11 @@ class TaskService:
     def __init__(self, repository):
         self.repository = repository
 
-    async def get_by_project(self, project_id: int) -> list[TaskListResponse]:
+    async def get_by_project(self, project_id: str) -> list[TaskListResponse]:
         tasks = await self.repository.get_by_project(project_id)
         return [TaskListResponse.model_validate(t) for t in tasks]
 
-    async def get_by_id(self, task_id: int) -> TaskDetailResponse:
+    async def get_by_id(self, task_id: str) -> TaskDetailResponse:
         task = await self.repository.get_by_id(task_id)
         if task is None:
             raise HTTPException(status_code=404, detail="Task not found")
@@ -50,7 +50,7 @@ class TaskService:
         result = await self.repository.update(task)
         return TaskDetailResponse.model_validate(result)
 
-    async def delete(self, task_id: int):
+    async def delete(self, task_id: str):
         task = await self.repository.get_by_id(task_id)
         if task is None:
             raise HTTPException(status_code=404, detail="Task not found")

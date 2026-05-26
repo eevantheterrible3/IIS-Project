@@ -8,7 +8,7 @@ class TaskWorkflowStepRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_id(self, step_id: int):
+    async def get_by_id(self, step_id: str):
         result = await self.db.execute(
             select(TaskWorkflowStep).where(TaskWorkflowStep.step_id == step_id)
         )

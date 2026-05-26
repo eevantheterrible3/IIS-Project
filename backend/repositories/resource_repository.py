@@ -12,7 +12,7 @@ class ResourceRepository:
         result = await self.db.execute(select(Resource))
         return result.scalars().all()
 
-    async def get_by_id(self, resource_id: int):
+    async def get_by_id(self, resource_id: str):
         result = await self.db.execute(
             select(Resource).where(Resource.resource_id == resource_id)
         )

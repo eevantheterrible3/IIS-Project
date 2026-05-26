@@ -12,13 +12,13 @@ router = APIRouter(prefix="/subtasks", tags=["Subtasks"])
 
 
 @router.get("/", response_model=List[SubtaskResponse])
-async def get_subtasks(task_id: int = Query(...), db: AsyncSession = Depends(get_db)):
+async def get_subtasks(task_id: str = Query(...), db: AsyncSession = Depends(get_db)):
     service = SubtaskService(SubtaskRepository(db))
     return await service.get_by_task(task_id)
 
 
 @router.get("/{subtask_id}", response_model=SubtaskResponse)
-async def get_subtask(subtask_id: int, db: AsyncSession = Depends(get_db)):
+async def get_subtask(subtask_id: str, db: AsyncSession = Depends(get_db)):
     service = SubtaskService(SubtaskRepository(db))
     return await service.get_by_id(subtask_id)
 
@@ -30,12 +30,12 @@ async def create_subtask(data: CreateSubtaskRequest, db: AsyncSession = Depends(
 
 
 @router.put("/{subtask_id}", response_model=SubtaskResponse)
-async def update_subtask(subtask_id: int, data: UpdateSubtaskRequest, db: AsyncSession = Depends(get_db)):
+async def update_subtask(subtask_id: str, data: UpdateSubtaskRequest, db: AsyncSession = Depends(get_db)):
     service = SubtaskService(SubtaskRepository(db))
     return await service.update(subtask_id, data)
 
 
 @router.delete("/{subtask_id}")
-async def delete_subtask(subtask_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_subtask(subtask_id: str, db: AsyncSession = Depends(get_db)):
     service = SubtaskService(SubtaskRepository(db))
     return await service.delete(subtask_id)

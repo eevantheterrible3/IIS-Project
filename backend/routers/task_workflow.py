@@ -25,12 +25,12 @@ async def create_workflow(data: CreateTaskWorkflowRequest, db: AsyncSession = De
 
 
 @router.put("/{workflow_id}", response_model=TaskWorkflowResponse)
-async def update_workflow(workflow_id: int, name: str, db: AsyncSession = Depends(get_db)):
+async def update_workflow(workflow_id: str, name: str, db: AsyncSession = Depends(get_db)):
     service = TaskWorkflowService(TaskWorkflowRepository(db), TaskWorkflowStepRepository(db))
     return await service.update(workflow_id, name)
 
 
 @router.delete("/{workflow_id}")
-async def delete_workflow(workflow_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_workflow(workflow_id: str, db: AsyncSession = Depends(get_db)):
     service = TaskWorkflowService(TaskWorkflowRepository(db), TaskWorkflowStepRepository(db))
     return await service.delete(workflow_id)

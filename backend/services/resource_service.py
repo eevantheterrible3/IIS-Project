@@ -12,7 +12,7 @@ class ResourceService:
         resources = await self.repository.get_all()
         return [ResourceResponse.model_validate(r) for r in resources]
 
-    async def get_by_id(self, resource_id: int) -> ResourceResponse:
+    async def get_by_id(self, resource_id: str) -> ResourceResponse:
         resource = await self.repository.get_by_id(resource_id)
         if resource is None:
             raise HTTPException(status_code=404, detail="Resource not found")
@@ -43,7 +43,7 @@ class ResourceService:
         result = await self.repository.update(resource)
         return ResourceResponse.model_validate(result)
 
-    async def delete(self, resource_id: int):
+    async def delete(self, resource_id: str):
         resource = await self.repository.get_by_id(resource_id)
         if resource is None:
             raise HTTPException(status_code=404, detail="Resource not found")

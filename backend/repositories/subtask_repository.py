@@ -8,13 +8,13 @@ class SubtaskRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_task(self, task_id: int):
+    async def get_by_task(self, task_id: str):
         result = await self.db.execute(
             select(Subtask).where(Subtask.task_id == task_id)
         )
         return result.scalars().all()
 
-    async def get_by_id(self, subtask_id: int):
+    async def get_by_id(self, subtask_id: str):
         result = await self.db.execute(
             select(Subtask).where(Subtask.subtask_id == subtask_id)
         )

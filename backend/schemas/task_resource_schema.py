@@ -6,8 +6,8 @@ from models.task_resource import TaskResourceStatus
 
 
 class CreateTaskResourceRequest(BaseModel):
-    task_id: int
-    resource_id: int
+    task_id: str
+    resource_id: str
     quantity: int = 1
     reserved_from: datetime | None = None
     reserved_until: datetime | None = None
@@ -21,8 +21,8 @@ class UpdateTaskResourceRequest(BaseModel):
 
 
 class TaskResourceResponse(BaseModel):
-    task_id: int
-    resource_id: int
+    task_id: str
+    resource_id: str
     quantity: int
     reserved_from: datetime | None
     reserved_until: datetime | None
