@@ -12,4 +12,4 @@ class WorkflowAction(Base):
     type = Column(String(100), nullable=True)
     description = Column(Text, nullable=True)
 
-    workflow_links = relationship("WorkflowHasAction", back_populates="action")
+    workflow_links = relationship("WorkflowHasAction", back_populates="action", foreign_keys="[WorkflowHasAction.action_id]")

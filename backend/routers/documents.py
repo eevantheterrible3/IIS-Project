@@ -6,14 +6,21 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
 from core.dependencies import get_current_user
 from database import get_db
 from models.document_version import DocumentVersion
 from models.user import User
+from models.workflow import Workflow
+from models.workflow_instance import WorkflowInstance
+from models.workflow_instance_step import WorkflowInstanceStep
 from repositories.document_repository import DocumentRepository
 from repositories.document_section_repository import DocumentSectionRepository
 from repositories.document_version_repository import DocumentVersionRepository
 from repositories.section_template_repository import SectionTemplateRepository
+from repositories.workflow_has_action_repository import WorkflowHasActionRepository
 from schemas.all_document_schema import DocumentCreateRequest, DocumentListItemResponse
 from schemas.document_detail_schema import DocumentDetailResponse
 from schemas.document_section_schema import DocumentSectionResponse
@@ -43,6 +50,39 @@ async def create_document(
     section_templates = await SectionTemplateRepository(db).get_by_document_type(request.document_type_id)
     service = DocumentService(DocumentRepository(db))
     doc = await service.create_document(request, current_user.user_id, section_templates)
+
+    if request.document_type_id:
+        result = await db.execute(
+            select(Workflow)
+            .where(Workflow.document_type_id == request.document_type_id)
+            .limit(1)
+        )
+        workflow = result.scalar_one_or_none()
+        if workflow:
+            wha_steps = await WorkflowHasActionRepository(db).get_by_workflow(workflow.workflow_id)
+            start_step = next((s for s in wha_steps if s.is_start_step), None)
+
+            instance = WorkflowInstance(
+                workflow_id=workflow.workflow_id,
+                document_id=doc.document_id,
+                current_step_id=start_step.action_id if start_step else None,
+                designated_user_id=current_user.user_id,
+            )
+            db.add(instance)
+            await db.flush()
+
+            for wha in wha_steps:
+                is_start = start_step and wha.action_id == start_step.action_id
+                instance_step = WorkflowInstanceStep(
+                    instance_id=instance.instance_id,
+                    action_id=wha.action_id,
+                    status="in_progress" if is_start else "pending",
+                    progress=0,
+                )
+                db.add(instance_step)
+
+            await db.commit()
+
     return DocumentListItemResponse(
         document_id=doc.document_id,
         name=doc.name,
@@ -139,11 +179,32 @@ async def save_document(
         for i, s in enumerate(all_sections)
     ])
 
+    current_step_id = None
+    instance_result = await db.execute(
+        select(WorkflowInstance)
+        .where(WorkflowInstance.document_id == document_id, WorkflowInstance.completed_at.is_(None))
+        .limit(1)
+    )
+    active_instance = instance_result.scalar_one_or_none()
+    if active_instance:
+        step_result = await db.execute(
+            select(WorkflowInstanceStep)
+            .where(
+                WorkflowInstanceStep.instance_id == active_instance.instance_id,
+                WorkflowInstanceStep.status == "in_progress",
+            )
+            .limit(1)
+        )
+        active_step = step_result.scalar_one_or_none()
+        if active_step:
+            current_step_id = active_step.instance_step_id
+
     version_repo = DocumentVersionRepository(db)
     latest = await version_repo.get_latest_number(document_id)
     version = DocumentVersion(
         document_id=document_id,
         author_id=current_user.user_id,
+        instance_step_id=current_step_id,
         version_number=latest + 1,
         full_content=snapshot,
         note=request.note,
@@ -168,6 +229,8 @@ async def get_document_versions(
             full_content=v.full_content,
             created_at=v.created_at,
             author_name=f"{v.author.name} {v.author.last_name}" if v.author else None,
+            instance_step_id=v.instance_step_id,
+            step_name=v.instance_step.action.name if v.instance_step and v.instance_step.action else None,
         )
         for v in versions
     ]

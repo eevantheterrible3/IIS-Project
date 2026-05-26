@@ -10,10 +10,14 @@ class DocumentVersionRepository:
         self.db = db
 
     async def get_by_document(self, document_id: str):
+        from models.workflow_instance_step import WorkflowInstanceStep
         result = await self.db.execute(
             select(DocumentVersion)
             .where(DocumentVersion.document_id == document_id)
-            .options(selectinload(DocumentVersion.author))
+            .options(
+                selectinload(DocumentVersion.author),
+                selectinload(DocumentVersion.instance_step).selectinload(WorkflowInstanceStep.action),
+            )
             .order_by(DocumentVersion.version_number.desc())
         )
         return result.scalars().all()

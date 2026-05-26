@@ -10,10 +10,12 @@ class Workflow(Base):
 
     workflow_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     name = Column(String(200), nullable=False)
+    document_type_id = Column(String(36), ForeignKey("document_types.document_type_id", ondelete="SET NULL"), nullable=True)
     created_by = Column(String(36), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
 
     created_at = Column(DateTime, server_default=func.now())
 
+    document_type = relationship("DocumentType")
     creator = relationship("User", back_populates="workflows")
     workflow_actions = relationship("WorkflowHasAction", back_populates="workflow", cascade="all, delete-orphan")
     instances = relationship("WorkflowInstance", back_populates="workflow", cascade="all, delete-orphan")

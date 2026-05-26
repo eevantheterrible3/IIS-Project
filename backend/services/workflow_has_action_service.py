@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from models.workflow_has_action import WorkflowHasAction
 from schemas.workflow_has_action_schema import (
+    UNSET,
     WorkflowHasActionCreateRequest,
     WorkflowHasActionUpdateRequest,
     WorkflowHasActionResponse,
@@ -39,11 +40,11 @@ class WorkflowHasActionService:
         link = await self.repository.get_by_id(workflow_id, action_id)
         if link is None:
             raise HTTPException(status_code=404, detail="Workflow-action link not found")
-        if request.next_action is not None:
+        if request.next_action != UNSET:
             link.next_action = request.next_action
         if request.is_start_step is not None:
             link.is_start_step = request.is_start_step
-        if request.condition_id is not None:
+        if request.condition_id != UNSET:
             link.condition_id = request.condition_id
         updated = await self.repository.update(link)
         return self._to_response(updated)
@@ -52,6 +53,9 @@ class WorkflowHasActionService:
         link = await self.repository.get_by_id(workflow_id, action_id)
         if link is None:
             raise HTTPException(status_code=404, detail="Workflow-action link not found")
+        predecessors = await self.repository.get_pointing_to(workflow_id, action_id)
+        for pred in predecessors:
+            pred.next_action = None
         await self.repository.delete(link)
         return {"message": "Workflow-action link deleted successfully"}
 

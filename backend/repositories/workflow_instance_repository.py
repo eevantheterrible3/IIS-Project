@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from models.workflow import Workflow
 from models.workflow_instance import WorkflowInstance
 
 
@@ -8,14 +9,18 @@ class WorkflowInstanceRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    def _base_options(self):
+        return [
+            selectinload(WorkflowInstance.workflow).selectinload(Workflow.document_type),
+            selectinload(WorkflowInstance.document),
+            selectinload(WorkflowInstance.current_step),
+            selectinload(WorkflowInstance.designated_user),
+        ]
+
     async def get_all(self):
         result = await self.db.execute(
             select(WorkflowInstance)
-            .options(
-                selectinload(WorkflowInstance.workflow),
-                selectinload(WorkflowInstance.current_step),
-                selectinload(WorkflowInstance.designated_user),
-            )
+            .options(*self._base_options())
             .order_by(WorkflowInstance.started_at.desc())
         )
         return result.scalars().all()
@@ -24,11 +29,7 @@ class WorkflowInstanceRepository:
         result = await self.db.execute(
             select(WorkflowInstance)
             .where(WorkflowInstance.instance_id == instance_id)
-            .options(
-                selectinload(WorkflowInstance.workflow),
-                selectinload(WorkflowInstance.current_step),
-                selectinload(WorkflowInstance.designated_user),
-            )
+            .options(*self._base_options())
         )
         return result.scalar_one_or_none()
 
@@ -36,11 +37,7 @@ class WorkflowInstanceRepository:
         result = await self.db.execute(
             select(WorkflowInstance)
             .where(WorkflowInstance.document_id == document_id)
-            .options(
-                selectinload(WorkflowInstance.workflow),
-                selectinload(WorkflowInstance.current_step),
-                selectinload(WorkflowInstance.designated_user),
-            )
+            .options(*self._base_options())
             .order_by(WorkflowInstance.started_at.desc())
         )
         return result.scalars().all()

@@ -21,7 +21,9 @@ class WorkflowInstanceResponse(BaseModel):
     instance_id: str
     workflow_id: str
     workflow_name: Optional[str] = None
+    document_type_name: Optional[str] = None
     document_id: str
+    document_name: Optional[str] = None
     current_step_id: Optional[str] = None
     current_step_name: Optional[str] = None
     designated_user_id: Optional[str] = None

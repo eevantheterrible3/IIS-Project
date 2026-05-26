@@ -8,6 +8,12 @@ import DocumentView from "./pages/app/DocumentView";
 import DocumentTypesList from "./pages/app/DocumentTypesList";
 import SectionTemplatesList from "./pages/app/SectionTemplatesList";
 import SystemPrompts from "./pages/app/SystemPrompts";
+import WorkflowActionsList from "./pages/app/WorkflowActionsList";
+import WorkflowsList from "./pages/app/WorkflowsList";
+import WorkflowInstancesList from "./pages/app/WorkflowInstancesList";
+import ConditionTypesList from "./pages/app/ConditionTypesList";
+import ConditionsList from "./pages/app/ConditionsList";
+import DocumentRatingsList from "./pages/app/DocumentRatingsList";
 
 function App() {
     return (
@@ -23,7 +29,13 @@ function App() {
                     <Route path="documents/:id" element={<DocumentView />} />
                     <Route path="document-types" element={<DocumentTypesList />} />
                     <Route path="section-templates" element={<SectionTemplatesList />} />
+                    <Route path="document-ratings" element={<DocumentRatingsList />} />
                     <Route path="system-prompts" element={<SystemPrompts />} />
+                    <Route path="workflow-actions" element={<WorkflowActionsList />} />
+                    <Route path="workflows" element={<WorkflowsList />} />
+                    <Route path="workflow-instances" element={<WorkflowInstancesList />} />
+                    <Route path="condition-types" element={<ConditionTypesList />} />
+                    <Route path="conditions" element={<ConditionsList />} />
                     <Route path="new-document" element={<div className="p-6 text-gray-400">Document generation — coming soon.</div>} />
                 </Route>
 

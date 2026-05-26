@@ -44,6 +44,16 @@ class WorkflowHasActionRepository:
         await self.db.refresh(link)
         return link
 
+    async def get_pointing_to(self, workflow_id: str, action_id: str):
+        result = await self.db.execute(
+            select(WorkflowHasAction)
+            .where(
+                WorkflowHasAction.workflow_id == workflow_id,
+                WorkflowHasAction.next_action == action_id,
+            )
+        )
+        return result.scalars().all()
+
     async def delete(self, link: WorkflowHasAction):
         await self.db.delete(link)
         await self.db.commit()

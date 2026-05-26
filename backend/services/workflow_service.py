@@ -20,6 +20,7 @@ class WorkflowService:
     async def create(self, request: WorkflowCreateRequest, user_id: str) -> WorkflowResponse:
         workflow = Workflow(
             name=request.name,
+            document_type_id=request.document_type_id,
             created_by=request.created_by or user_id,
         )
         created = await self.repository.create(workflow)
@@ -32,6 +33,8 @@ class WorkflowService:
             raise HTTPException(status_code=404, detail="Workflow not found")
         if request.name is not None:
             workflow.name = request.name
+        if request.document_type_id is not None:
+            workflow.document_type_id = request.document_type_id
         updated = await self.repository.update(workflow)
         return self._to_response(updated)
 
@@ -46,6 +49,8 @@ class WorkflowService:
         return WorkflowResponse(
             workflow_id=workflow.workflow_id,
             name=workflow.name,
+            document_type_id=workflow.document_type_id,
+            document_type_name=workflow.document_type.name if workflow.document_type else None,
             created_by=workflow.created_by,
             creator_name=f"{workflow.creator.name} {workflow.creator.last_name}" if workflow.creator else None,
             created_at=workflow.created_at,

@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
 
+UNSET = "__UNSET__"
+
 
 class WorkflowHasActionCreateRequest(BaseModel):
     workflow_id: str
@@ -11,9 +13,9 @@ class WorkflowHasActionCreateRequest(BaseModel):
 
 
 class WorkflowHasActionUpdateRequest(BaseModel):
-    next_action: Optional[str] = None
+    next_action: Optional[str] = UNSET
     is_start_step: Optional[bool] = None
-    condition_id: Optional[str] = None
+    condition_id: Optional[str] = UNSET
 
 
 class WorkflowHasActionResponse(BaseModel):

@@ -11,7 +11,7 @@ class WorkflowRepository:
     async def get_all(self):
         result = await self.db.execute(
             select(Workflow)
-            .options(selectinload(Workflow.creator))
+            .options(selectinload(Workflow.creator), selectinload(Workflow.document_type))
             .order_by(Workflow.created_at.desc())
         )
         return result.scalars().all()
@@ -20,7 +20,7 @@ class WorkflowRepository:
         result = await self.db.execute(
             select(Workflow)
             .where(Workflow.workflow_id == workflow_id)
-            .options(selectinload(Workflow.creator))
+            .options(selectinload(Workflow.creator), selectinload(Workflow.document_type))
         )
         return result.scalar_one_or_none()
 

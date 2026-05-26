@@ -7,6 +7,8 @@ from core.dependencies import get_current_user
 from database import get_db
 from models.user import User
 from repositories.workflow_instance_repository import WorkflowInstanceRepository
+from repositories.workflow_has_action_repository import WorkflowHasActionRepository
+from repositories.workflow_repository import WorkflowRepository
 from schemas.workflow_instance_schema import (
     WorkflowInstanceCreateRequest,
     WorkflowInstanceUpdateRequest,
@@ -52,7 +54,12 @@ async def create_instance(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    service = WorkflowInstanceService(WorkflowInstanceRepository(db))
+    service = WorkflowInstanceService(
+        WorkflowInstanceRepository(db),
+        workflow_repo=WorkflowRepository(db),
+        wha_repo=WorkflowHasActionRepository(db),
+        db=db,
+    )
     return await service.create(request)
 
 
