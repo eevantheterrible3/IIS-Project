@@ -22,3 +22,4 @@ class WorkflowInstance(Base):
     document = relationship("Document")
     current_step = relationship("WorkflowAction")
     designated_user = relationship("User")
+    steps = relationship("WorkflowInstanceStep", back_populates="instance", cascade="all, delete-orphan")

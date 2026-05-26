@@ -20,3 +20,4 @@ from .workflow_has_action import WorkflowHasAction
 from .workflow_instance import WorkflowInstance
 from .condition_type import ConditionType
 from .condition import Condition
+from .workflow_instance_step import WorkflowInstanceStep
