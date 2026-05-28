@@ -7,13 +7,11 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from core.dependencies import get_current_user
 from database import get_db
 from models.document_version import DocumentVersion
 from models.user import User
-from models.workflow import Workflow
 from models.workflow_instance import WorkflowInstance
 from models.workflow_instance_step import WorkflowInstanceStep
 from repositories.document_repository import DocumentRepository
@@ -48,40 +46,12 @@ async def create_document(
     db: AsyncSession = Depends(get_db),
 ):
     section_templates = await SectionTemplateRepository(db).get_by_document_type(request.document_type_id)
-    service = DocumentService(DocumentRepository(db))
+    service = DocumentService(
+        DocumentRepository(db),
+        wha_repo=WorkflowHasActionRepository(db),
+        db=db,
+    )
     doc = await service.create_document(request, current_user.user_id, section_templates)
-
-    if request.document_type_id:
-        result = await db.execute(
-            select(Workflow)
-            .where(Workflow.document_type_id == request.document_type_id)
-            .limit(1)
-        )
-        workflow = result.scalar_one_or_none()
-        if workflow:
-            wha_steps = await WorkflowHasActionRepository(db).get_by_workflow(workflow.workflow_id)
-            start_step = next((s for s in wha_steps if s.is_start_step), None)
-
-            instance = WorkflowInstance(
-                workflow_id=workflow.workflow_id,
-                document_id=doc.document_id,
-                current_step_id=start_step.action_id if start_step else None,
-                designated_user_id=current_user.user_id,
-            )
-            db.add(instance)
-            await db.flush()
-
-            for wha in wha_steps:
-                is_start = start_step and wha.action_id == start_step.action_id
-                instance_step = WorkflowInstanceStep(
-                    instance_id=instance.instance_id,
-                    action_id=wha.action_id,
-                    status="in_progress" if is_start else "pending",
-                    progress=0,
-                )
-                db.add(instance_step)
-
-            await db.commit()
 
     return DocumentListItemResponse(
         document_id=doc.document_id,
