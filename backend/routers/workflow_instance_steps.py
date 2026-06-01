@@ -1,0 +1,78 @@
+from typing import List
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.dependencies import get_current_user
+from database import get_db
+from models.user import User
+from repositories.document_section_repository import DocumentSectionRepository
+from repositories.document_version_repository import DocumentVersionRepository
+from repositories.workflow_has_action_repository import WorkflowHasActionRepository
+from repositories.workflow_instance_repository import WorkflowInstanceRepository
+from repositories.workflow_instance_step_repository import WorkflowInstanceStepRepository
+from schemas.workflow_instance_step_schema import (
+    WorkflowInstanceStepCreateRequest,
+    WorkflowInstanceStepUpdateRequest,
+    WorkflowInstanceStepResponse,
+)
+from services.workflow_instance_step_service import WorkflowInstanceStepService
+
+router = APIRouter(prefix="/workflow-instance-steps", tags=["Workflow Instance Steps"])
+
+
+@router.get("/instance/{instance_id}", response_model=List[WorkflowInstanceStepResponse])
+async def get_steps_for_instance(
+    instance_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = WorkflowInstanceStepService(WorkflowInstanceStepRepository(db))
+    return await service.get_by_instance(instance_id)
+
+
+@router.get("/{instance_step_id}", response_model=WorkflowInstanceStepResponse)
+async def get_step(
+    instance_step_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = WorkflowInstanceStepService(WorkflowInstanceStepRepository(db))
+    return await service.get_by_id(instance_step_id)
+
+
+@router.post("", response_model=WorkflowInstanceStepResponse)
+async def create_step(
+    request: WorkflowInstanceStepCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = WorkflowInstanceStepService(WorkflowInstanceStepRepository(db))
+    return await service.create(request)
+
+
+@router.put("/{instance_step_id}", response_model=WorkflowInstanceStepResponse)
+async def update_step(
+    instance_step_id: str,
+    request: WorkflowInstanceStepUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = WorkflowInstanceStepService(
+        WorkflowInstanceStepRepository(db),
+        instance_repository=WorkflowInstanceRepository(db),
+        section_repository=DocumentSectionRepository(db),
+        version_repository=DocumentVersionRepository(db),
+        workflow_has_action_repository=WorkflowHasActionRepository(db),
+    )
+    return await service.update(instance_step_id, request, author_id=current_user.user_id)
+
+
+@router.delete("/{instance_step_id}")
+async def delete_step(
+    instance_step_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = WorkflowInstanceStepService(WorkflowInstanceStepRepository(db))
+    return await service.delete(instance_step_id)

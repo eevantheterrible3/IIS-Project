@@ -1,12 +1,18 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { FileText, Sparkles, Layers, LayoutTemplate, Zap, Plus } from "lucide-react";
+import { FileText, Sparkles, Layers, LayoutTemplate, Zap, Plus, Cog, GitBranch, Play, Filter, GitMerge, Star } from "lucide-react";
 
 const navItems = [
     { to: "/app/documents", icon: FileText, label: "Documents" },
     { to: "/app/new-document", icon: Sparkles, label: "New Document" },
     { to: "/app/document-types", icon: Layers, label: "Document Types" },
     { to: "/app/section-templates", icon: LayoutTemplate, label: "Section Templates" },
+    { to: "/app/document-ratings", icon: Star, label: "Ratings" },
     { to: "/app/system-prompts", icon: Zap, label: "System Prompts" },
+    { to: "/app/workflow-actions", icon: Cog, label: "Workflow Actions" },
+    { to: "/app/workflows", icon: GitBranch, label: "Workflows" },
+    { to: "/app/workflow-instances", icon: Play, label: "Instances" },
+    { to: "/app/condition-types", icon: Filter, label: "Condition Types" },
+    { to: "/app/conditions", icon: GitMerge, label: "Conditions" },
 ];
 
 export default function Sidebar() {

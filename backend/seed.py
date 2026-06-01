@@ -27,6 +27,14 @@ from models.task import Task, TaskPriority
 from models.subtask import Subtask, SubtaskStatus
 from models.resource import Resource, ResourceStatus
 from models.task_resource import TaskResource, TaskResourceStatus
+from models.workflow_action import WorkflowAction
+from models.workflow import Workflow
+from models.workflow_has_action import WorkflowHasAction
+from models.workflow_instance import WorkflowInstance
+from models.workflow_instance_step import WorkflowInstanceStep
+from models.condition_type import ConditionType
+from models.condition import Condition
+from models.document_rating import DocumentRating
 from core.security import hash_password
 
 engine = create_async_engine(DATABASE_URL)
@@ -131,6 +139,31 @@ task_server_setup_id      = str(uuid.uuid4())
 task_staff_training_id    = str(uuid.uuid4())
 task_documentation_id     = str(uuid.uuid4())
 task_final_report_id      = str(uuid.uuid4())
+wa_draft_id         = str(uuid.uuid4())
+wa_review_id        = str(uuid.uuid4())
+wa_approve_id       = str(uuid.uuid4())
+wa_revise_id        = str(uuid.uuid4())
+wa_publish_id       = str(uuid.uuid4())
+
+wf_doc_review_id    = str(uuid.uuid4())
+wf_contract_id      = str(uuid.uuid4())
+
+ct_role_id          = str(uuid.uuid4())
+ct_doctype_id       = str(uuid.uuid4())
+ct_approval_id      = str(uuid.uuid4())
+
+cond_mgr_review_id  = str(uuid.uuid4())
+cond_contract_id    = str(uuid.uuid4())
+cond_admin_approve_id = str(uuid.uuid4())
+
+wi_cv_review_id     = str(uuid.uuid4())
+wi_contract_flow_id = str(uuid.uuid4())
+
+wis1_id             = str(uuid.uuid4())
+wis2_id             = str(uuid.uuid4())
+wis3_id             = str(uuid.uuid4())
+wis4_id             = str(uuid.uuid4())
+wis5_id             = str(uuid.uuid4())
 
 PWD = hash_password("password123")
 
@@ -325,6 +358,21 @@ async def seed():
             Resource(resource_id=res_meeting_room_id, name="Meeting Room A",    resource_type="Room",      description="Conference room with whiteboard", status=ResourceStatus.active, total_quantity=1),
             Resource(resource_id=res_projector_id,    name="Projector",         resource_type="Equipment", description="HDMI projector for presentations", status=ResourceStatus.active, total_quantity=2),
         ])
+          # Workflow Actions
+        db.add_all([
+            WorkflowAction(action_id=wa_draft_id,   name="Draft",           type="create",  description="Initial document drafting"),
+            WorkflowAction(action_id=wa_review_id,   name="Peer Review",     type="review",  description="Review by a team member"),
+            WorkflowAction(action_id=wa_approve_id,  name="Manager Approval", type="approve", description="Approval by project manager"),
+            WorkflowAction(action_id=wa_revise_id,   name="Revise",          type="edit",    description="Revise document based on feedback"),
+            WorkflowAction(action_id=wa_publish_id,  name="Publish",         type="publish", description="Final publish of the document"),
+        ])
+
+        # Condition Types
+        db.add_all([
+            ConditionType(condition_type_id=ct_role_id,     name="Role-based"),
+            ConditionType(condition_type_id=ct_doctype_id,  name="Document-type"),
+            ConditionType(condition_type_id=ct_approval_id, name="Approval-required"),
+        ])
 
         await db.flush()
 
@@ -362,6 +410,18 @@ async def seed():
             TaskWorkflow(task_workflow_id=workflow_technical_id,      name="Technical",       created_by=user_emma_id),
             TaskWorkflow(task_workflow_id=workflow_fieldwork_id,       name="Field Work",      created_by=user_emma_id),
             TaskWorkflow(task_workflow_id=workflow_administrative_id,  name="Administrative",  created_by=user_emma_id),
+        ])
+        # Conditions
+        db.add_all([
+            Condition(condition_id=cond_mgr_review_id,    condition_type_id=ct_role_id,     document_type_id=None,          role_id=role_manager_id, description="Only project managers can review"),
+            Condition(condition_id=cond_contract_id,      condition_type_id=ct_doctype_id,  document_type_id=dt_contract_id, role_id=None,           description="Applies only to contract documents"),
+            Condition(condition_id=cond_admin_approve_id, condition_type_id=ct_approval_id, document_type_id=None,          role_id=role_admin_id,   description="Admin approval required before publish"),
+        ])
+
+        # Workflows
+        db.add_all([
+            Workflow(workflow_id=wf_doc_review_id, name="Document Review Flow", document_type_id=dt_cv_id, created_by=user_emma_id),
+            Workflow(workflow_id=wf_contract_id,   name="Contract Approval Flow", document_type_id=dt_contract_id, created_by=user_mark_id),
         ])
 
         await db.flush()
@@ -456,6 +516,22 @@ async def seed():
                  current_step_id=step_admin_created_id,    assigned_user_id=user_emma_id,
                  project_id=project_archive_id, deadline=datetime(2026, 6, 15)),
         ])
+        # Workflow Has Actions (steps)
+        db.add_all([
+            WorkflowHasAction(workflow_id=wf_doc_review_id, action_id=wa_draft_id,   next_action=wa_review_id,  is_start_step=True,  condition_id=None),
+            WorkflowHasAction(workflow_id=wf_doc_review_id, action_id=wa_review_id,  next_action=wa_approve_id, is_start_step=False, condition_id=cond_mgr_review_id),
+            WorkflowHasAction(workflow_id=wf_doc_review_id, action_id=wa_approve_id, next_action=wa_publish_id, is_start_step=False, condition_id=None),
+            WorkflowHasAction(workflow_id=wf_doc_review_id, action_id=wa_publish_id, next_action=None,          is_start_step=False, condition_id=None),
+            WorkflowHasAction(workflow_id=wf_contract_id,   action_id=wa_draft_id,   next_action=wa_review_id,  is_start_step=True,  condition_id=cond_contract_id),
+            WorkflowHasAction(workflow_id=wf_contract_id,   action_id=wa_review_id,  next_action=wa_approve_id, is_start_step=False, condition_id=None),
+            WorkflowHasAction(workflow_id=wf_contract_id,   action_id=wa_approve_id, next_action=None,          is_start_step=False, condition_id=cond_admin_approve_id),
+        ])
+
+        # Workflow Instances
+        db.add_all([
+            WorkflowInstance(instance_id=wi_cv_review_id,    workflow_id=wf_doc_review_id, document_id=doc_cv_id,       current_step_id=wa_review_id,  designated_user_id=user_anna_id,  note="CV under peer review"),
+            WorkflowInstance(instance_id=wi_contract_flow_id, workflow_id=wf_contract_id,  document_id=doc_contract_id, current_step_id=wa_approve_id, designated_user_id=user_sarah_id, note="Contract awaiting admin approval"),
+        ])
 
         await db.flush()
 
@@ -490,6 +566,24 @@ async def seed():
             TaskResource(task_id=task_scanner_purchase_id, resource_id=resource_scanner_id, quantity=2, status=TaskResourceStatus.in_use),
             TaskResource(task_id=task_doc_scanning_id,     resource_id=res_laptop_id,        quantity=1, status=TaskResourceStatus.in_use),
             TaskResource(task_id=task_server_setup_id,     resource_id=resource_scanner_id,  quantity=1, status=TaskResourceStatus.reserved),
+        ])
+        # Workflow Instance Steps (with progress)
+        db.add_all([
+            WorkflowInstanceStep(instance_step_id=wis1_id, instance_id=wi_cv_review_id, action_id=wa_draft_id,   status="completed",   progress=100, assigned_user_id=user_emma_id, note="Draft completed"),
+            WorkflowInstanceStep(instance_step_id=wis2_id, instance_id=wi_cv_review_id, action_id=wa_review_id,  status="in_progress", progress=60,  assigned_user_id=user_anna_id, note="Review in progress"),
+            WorkflowInstanceStep(instance_step_id=wis3_id, instance_id=wi_cv_review_id, action_id=wa_approve_id, status="pending",     progress=0,   assigned_user_id=None,         note=None),
+            WorkflowInstanceStep(instance_step_id=wis4_id, instance_id=wi_contract_flow_id, action_id=wa_draft_id,   status="completed",   progress=100, assigned_user_id=user_mark_id,  note="Contract drafted"),
+            WorkflowInstanceStep(instance_step_id=wis5_id, instance_id=wi_contract_flow_id, action_id=wa_approve_id, status="in_progress", progress=30,  assigned_user_id=user_sarah_id, note="Under admin review"),
+        ])
+
+        # Document Ratings
+        db.add_all([
+            DocumentRating(document_id=doc_cv_id,        user_id=user_anna_id,  score=4, comment="Well structured CV, minor formatting issues"),
+            DocumentRating(document_id=doc_cv_id,        user_id=user_peter_id, score=5, comment="Excellent candidate profile"),
+            DocumentRating(document_id=doc_contract_id,  user_id=user_sarah_id, score=3, comment="Needs clarification on termination clause"),
+            DocumentRating(document_id=doc_contract_id,  user_id=user_emma_id,  score=4, comment="Solid contract, well written"),
+            DocumentRating(document_id=doc_interview_id, user_id=user_emma_id,  score=5, comment="Great interview plan"),
+            DocumentRating(document_id=doc_invoice_id,   user_id=user_anna_id,  score=2, comment="Missing vendor details"),
         ])
 
         await db.commit()

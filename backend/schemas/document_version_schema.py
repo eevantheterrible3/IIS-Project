@@ -20,3 +20,5 @@ class DocumentVersionResponse(BaseModel):
     full_content: str | None = None
     created_at: datetime | None = None
     author_name: str | None = None
+    instance_step_id: str | None = None
+    step_name: str | None = None
