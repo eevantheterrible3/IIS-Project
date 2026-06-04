@@ -40,6 +40,7 @@ class DocumentRepository:
         )
     
         return result.scalar_one_or_none()
+
     async def update_document_tags_and_metadata(self, document, tags, metadata):
         document.tags.clear()
         document.metadata_items.clear()

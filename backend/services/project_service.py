@@ -36,6 +36,7 @@ class ProjectService:
             )
             for work in works
         ]
+
     async def ensure_user_is_admin(self, user_id: int):
         is_admin = await self.project_repository.is_user_admin(user_id)
 
@@ -44,6 +45,7 @@ class ProjectService:
                 status_code=403,
                 detail="Only administrators can manage projects"
             )
+
     async def delete_project(self, project_id: int, user_id: int):
         await self.ensure_user_is_admin(user_id)
 

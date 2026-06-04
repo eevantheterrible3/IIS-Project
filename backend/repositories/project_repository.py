@@ -32,7 +32,7 @@ class ProjectRepository:
         )
         return result.scalar_one_or_none()
 
-    async def is_user_admin(self, user_id: int) -> bool:
+    async def is_user_admin(self, user_id: int):
         result = await self.db.execute(
             select(Work)
             .join(Role, Work.role_id == Role.role_id)
@@ -42,8 +42,7 @@ class ProjectRepository:
             )
         )
 
-        return result.scalar_one_or_none() is not None
-
+        return result.first() is not None
     async def delete_project(self, project: Project):
         await self.db.delete(project)
         await self.db.commit()

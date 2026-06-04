@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from database import get_db
 from repositories.document_repository import DocumentRepository
 from services.document_service import DocumentService
@@ -23,6 +22,7 @@ async def get_document_details(
     document_service = DocumentService(document_repository)
 
     return await document_service.get_document_details(document_id)
+
 @router.get("/{document_id}/file")
 async def get_document_file(
     document_id: int,

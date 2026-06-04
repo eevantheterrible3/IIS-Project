@@ -149,3 +149,16 @@ INSERT INTO works (user_id, project_id, role_id)
 VALUES (5, 2, 1);
 INSERT INTO work (user_id, project_id, role_id)
 VALUES (6, 1, 1);
+
+SELECT setval(
+    'projects_project_id_seq',
+    (SELECT MAX(project_id) FROM projects)
+);
+INSERT INTO projects (name, description, start_date, end_date, status)
+VALUES (
+    'Test Delete Project',
+    'Project used only for testing delete functionality.',
+    NOW(),
+    NULL,
+    'ACTIVE'
+);

@@ -1,8 +1,6 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from database import get_db
 from repositories.project_repository import ProjectRepository
 from repositories.document_repository import DocumentRepository
@@ -46,6 +44,7 @@ async def delete_project(
     project_service = ProjectService(project_repository)
 
     return await project_service.delete_project(project_id, user_id)
+
 @router.post("")
 async def create_project(
     request: ProjectCreateRequest,
@@ -56,6 +55,7 @@ async def create_project(
     project_service = ProjectService(project_repository)
 
     return await project_service.create_project(request, user_id)
+
 @router.put("/{project_id}")
 async def update_project(
     project_id: int,
