@@ -12,6 +12,7 @@ from models.document_version import DocumentVersion
 from models.user import User
 from repositories.document_repository import DocumentRepository
 from repositories.document_section_repository import DocumentSectionRepository
+from repositories.document_type_repository import DocumentTypeRepository
 from repositories.document_version_repository import DocumentVersionRepository
 from repositories.section_template_repository import SectionTemplateRepository
 from schemas.all_document_schema import DocumentCreateRequest, DocumentListItemResponse
@@ -170,4 +171,53 @@ async def get_document_versions(
             author_name=f"{v.author.name} {v.author.last_name}" if v.author else None,
         )
         for v in versions
+    ]
+
+
+@router.post("/{document_id}/generate-sections", response_model=List[DocumentSectionResponse])
+async def generate_document_sections(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    document = await DocumentRepository(db).get_document_by_id(document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    section_repo = DocumentSectionRepository(db)
+    sections = await section_repo.get_by_document(document_id)
+    if not sections:
+        return []
+
+    doc_type = await DocumentTypeRepository(db).get_by_id(document.document_type_id)
+
+    try:
+        from services.ai_service import AIDocumentService
+        ai_service = AIDocumentService()
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    generated = await ai_service.generate_all_sections(
+        sections=sections,
+        user_prompt=document.user_prompt or "",
+        document_type_system_prompt=doc_type.system_prompt if doc_type else None,
+    )
+
+    for section in sections:
+        section.content = generated.get(section.document_section_id, section.content)
+        await section_repo.update(section)
+
+    updated = await section_repo.get_by_document(document_id)
+    return [
+        DocumentSectionResponse(
+            document_section_id=s.document_section_id,
+            document_id=s.document_id,
+            section_template_id=s.section_template_id,
+            section_name=s.section_template.name if s.section_template else f"Section {i + 1}",
+            content=s.content,
+            order_index=s.order_index,
+            created_at=s.created_at,
+            updated_at=s.updated_at,
+        )
+        for i, s in enumerate(updated)
     ]
