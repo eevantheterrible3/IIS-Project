@@ -49,3 +49,23 @@ class TaskDetailResponse(BaseModel):
     last_updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ── Project Realization schemas ───────────────────────────────────────────────
+
+class CreateTaskResourceRequest(BaseModel):
+    resource_id: str
+    quantity: int = 1
+    reserved_from: str | None = None
+    reserved_until: str | None = None
+
+
+class CreateTaskWithResourcesRequest(BaseModel):
+    name: str
+    description: str | None = None
+    task_workflow_id: str
+    priority: str | None = None
+    assigned_user_id: str | None = None
+    deadline: str | None = None
+    subtasks: list = []
+    resources: list[CreateTaskResourceRequest] = []

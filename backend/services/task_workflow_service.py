@@ -2,7 +2,12 @@ from fastapi import HTTPException
 
 from models.task_workflow import TaskWorkflow
 from models.task_workflow_step import TaskWorkflowStep
-from schemas.task_workflow_schema import CreateTaskWorkflowRequest, TaskWorkflowResponse
+from schemas.task_workflow_schema import (
+    CreateTaskWorkflowRequest,
+    TaskWorkflowResponse,
+    WorkflowStepOrderedResponse,
+    WorkflowWithOrderedStepsResponse,
+)
 
 
 class TaskWorkflowService:
@@ -57,3 +62,38 @@ class TaskWorkflowService:
             raise HTTPException(status_code=404, detail="Workflow not found")
         await self.repository.delete(workflow)
         return {"message": "Workflow deleted"}
+
+    # ── Project Realization method ─────────────────────────────────────────────
+
+    def _order_steps(self, steps):
+        if not steps:
+            return []
+        step_map = {s.step_id: s for s in steps}
+        first = next((s for s in steps if s.is_first), steps[0])
+        ordered, visited = [], set()
+        current = first
+        while current and current.step_id not in visited:
+            ordered.append(current)
+            visited.add(current.step_id)
+            current = step_map.get(current.next_step_id)
+        return ordered
+
+    async def get_all_with_ordered_steps(self) -> list[WorkflowWithOrderedStepsResponse]:
+        workflows = await self.repository.get_all()
+        result = []
+        for wf in workflows:
+            steps = self._order_steps(wf.steps)
+            result.append(WorkflowWithOrderedStepsResponse(
+                task_workflow_id=wf.task_workflow_id,
+                name=wf.name,
+                steps=[
+                    WorkflowStepOrderedResponse(
+                        step_id=s.step_id,
+                        status_name=s.status_name,
+                        is_first=s.is_first,
+                        is_last=s.is_last,
+                    )
+                    for s in steps
+                ],
+            ))
+        return result

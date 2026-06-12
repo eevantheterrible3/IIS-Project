@@ -25,3 +25,18 @@ class TaskWorkflowResponse(BaseModel):
     steps: list[TaskWorkflowStepResponse]
 
     model_config = {"from_attributes": True}
+
+
+# ── Project Realization schema (ordered steps, no metadata) ──────────────────
+
+class WorkflowStepOrderedResponse(BaseModel):
+    step_id: str
+    status_name: str
+    is_first: bool
+    is_last: bool
+
+
+class WorkflowWithOrderedStepsResponse(BaseModel):
+    task_workflow_id: str
+    name: str
+    steps: list[WorkflowStepOrderedResponse]
