@@ -54,7 +54,7 @@ export default function ProjectRealizationLayout() {
                             className={({ isActive }) =>
                                 `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
                                     isActive
-                                        ? "bg-gray-100 text-gray-900 font-medium border-l-2 border-gray-900"
+                                        ? "bg-gray-100 text-gray-900 font-medium"
                                         : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                                 }`
                             }

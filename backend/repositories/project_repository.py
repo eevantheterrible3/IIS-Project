@@ -58,3 +58,25 @@ class ProjectRepository:
         await self.db.commit()
         await self.db.refresh(project)
         return project
+
+    # ── Project Realization methods ───────────────────────────────────────────
+
+    async def get_all_with_members(self):
+        result = await self.db.execute(
+            select(Project).options(
+                selectinload(Project.works).selectinload(Work.role),
+                selectinload(Project.works).selectinload(Work.user),
+            )
+        )
+        return result.scalars().all()
+
+    async def get_by_id_with_members(self, project_id: str):
+        result = await self.db.execute(
+            select(Project)
+            .where(Project.project_id == project_id)
+            .options(
+                selectinload(Project.works).selectinload(Work.role),
+                selectinload(Project.works).selectinload(Work.user),
+            )
+        )
+        return result.scalars().first()

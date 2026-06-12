@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import HTTPException
 
 from models.resource import Resource
@@ -5,8 +7,9 @@ from schemas.resource_schema import CreateResourceRequest, UpdateResourceRequest
 
 
 class ResourceService:
-    def __init__(self, repository):
+    def __init__(self, repository, task_resource_repository=None):
         self.repository = repository
+        self.task_resource_repository = task_resource_repository
 
     async def get_all(self) -> list[ResourceResponse]:
         resources = await self.repository.get_all()

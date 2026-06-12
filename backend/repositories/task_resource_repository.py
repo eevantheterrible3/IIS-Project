@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +24,16 @@ class TaskResourceRepository:
             )
         )
         return result.scalar_one_or_none()
+
+    async def get_by_resource_and_period(self, resource_id: str, reserved_from: datetime, reserved_until: datetime):
+        result = await self.db.execute(
+            select(TaskResource).where(
+                TaskResource.resource_id == resource_id,
+                TaskResource.reserved_from <= reserved_until,
+                TaskResource.reserved_until >= reserved_from,
+            )
+        )
+        return result.scalars().all()
 
     async def create(self, task_resource: TaskResource):
         self.db.add(task_resource)

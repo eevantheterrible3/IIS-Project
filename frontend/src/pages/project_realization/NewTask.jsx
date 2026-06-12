@@ -7,19 +7,19 @@ export default function NewTask() {
     const { project_id } = useParams();
     const navigate = useNavigate();
 
-    const [project, setProject]         = useState(null);
-    const [workflows, setWorkflows]     = useState([]);
-    const [resources, setResources]     = useState([]);
+    const [project, setProject]     = useState(null);
+    const [workflows, setWorkflows] = useState([]);
+    const [resources, setResources] = useState([]);
 
-    const [name, setName]               = useState("");
-    const [description, setDescription] = useState("");
-    const [workflowId, setWorkflowId]   = useState("");
-    const [priority, setPriority]       = useState("medium");
-    const [assigneeId, setAssigneeId]   = useState("");
-    const [deadline, setDeadline]       = useState("");
+    const [form, setForm] = useState({
+        name: "", description: "", workflowId: "",
+        priority: "medium", assigneeId: "", deadline: ""
+    });
+    const setField = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
+
     const [taskResources, setTaskResources] = useState([]);
-    const [saving, setSaving]           = useState(false);
-    const [error, setError]             = useState("");
+    const [saving, setSaving] = useState(false);
+    const [error, setError]   = useState("");
 
     useEffect(() => {
         async function load() {
@@ -32,39 +32,51 @@ export default function NewTask() {
             setProject(p);
             setWorkflows(w);
             setResources(r);
-            if (w.length > 0) setWorkflowId(w[0].task_workflow_id);
+            if (w.length > 0) setField("workflowId", w[0].task_workflow_id);
         }
         load();
     }, [project_id]);
 
-    const selectedWorkflow = workflows.find(w => w.task_workflow_id === workflowId);
+    const selectedWorkflow = workflows.find(w => w.task_workflow_id === form.workflowId);
 
     function addResource() {
-        setTaskResources(prev => [...prev, { id: Date.now(), resource_id: "", quantity: 1, reserved_from: "", reserved_until: "" }]);
+        setTaskResources(prev => [...prev, { id: Date.now(), resource_id: "", quantity: 1, reserved_from: "", reserved_until: "", available: null }]);
     }
     function removeResource(id) {
         setTaskResources(prev => prev.filter(r => r.id !== id));
     }
-    function updateResource(id, field, value) {
-        setTaskResources(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
+    async function updateResource(id, field, value) {
+        const updated = taskResources.map(r => r.id === id ? { ...r, [field]: value } : r);
+        setTaskResources(updated);
+
+        const row = updated.find(r => r.id === id);
+        if (row.resource_id && row.reserved_from && row.reserved_until) {
+            const res = await authFetch(
+                `/project-realization/resources/${row.resource_id}/available?reserved_from=${row.reserved_from}&reserved_until=${row.reserved_until}`
+            );
+            if (res.ok) {
+                const data = await res.json();
+                setTaskResources(prev => prev.map(r => r.id === id ? { ...r, available: data.available } : r));
+            }
+        }
     }
 
     async function handleSave() {
-        if (!name.trim())  { setError("Task name is required."); return; }
-        if (!workflowId)   { setError("Please select a workflow."); return; }
-        if (!priority)     { setError("Priority is required."); return; }
-        if (!deadline)     { setError("Deadline is required."); return; }
+        if (!form.name.trim()) { setError("Task name is required."); return; }
+        if (!form.workflowId)  { setError("Please select a workflow."); return; }
+        if (!form.priority)    { setError("Priority is required."); return; }
+        if (!form.deadline)    { setError("Deadline is required."); return; }
 
         setSaving(true);
         setError("");
 
         const body = {
-            name: name.trim(),
-            description: description.trim() || null,
-            task_workflow_id: workflowId,
-            priority,
-            assigned_user_id: assigneeId || null,
-            deadline,
+            name: form.name.trim(),
+            description: form.description.trim() || null,
+            task_workflow_id: form.workflowId,
+            priority: form.priority,
+            assigned_user_id: form.assigneeId || null,
+            deadline: form.deadline,
             subtasks: [],
             resources: taskResources
                 .filter(r => r.resource_id)
@@ -110,8 +122,6 @@ export default function NewTask() {
 
                 {/* ── Left panel ── */}
                 <div className="space-y-4">
-
-                    {/* Basic info */}
                     <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
                         <h3 className="text-sm font-semibold text-gray-700">Basic information</h3>
 
@@ -121,8 +131,8 @@ export default function NewTask() {
                             </label>
                             <input
                                 type="text"
-                                value={name}
-                                onChange={e => setName(e.target.value)}
+                                value={form.name}
+                                onChange={e => setField("name", e.target.value)}
                                 placeholder="Enter task name..."
                                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
                             />
@@ -131,8 +141,8 @@ export default function NewTask() {
                         <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
                             <textarea
-                                value={description}
-                                onChange={e => setDescription(e.target.value)}
+                                value={form.description}
+                                onChange={e => setField("description", e.target.value)}
                                 placeholder="Short task description..."
                                 rows={3}
                                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none"
@@ -151,8 +161,8 @@ export default function NewTask() {
                                     Task type <span className="text-red-500">*</span>
                                 </label>
                                 <select
-                                    value={workflowId}
-                                    onChange={e => setWorkflowId(e.target.value)}
+                                    value={form.workflowId}
+                                    onChange={e => setField("workflowId", e.target.value)}
                                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
                                 >
                                     {workflows.map(w => (
@@ -168,8 +178,8 @@ export default function NewTask() {
                                     Priority <span className="text-red-500">*</span>
                                 </label>
                                 <select
-                                    value={priority}
-                                    onChange={e => setPriority(e.target.value)}
+                                    value={form.priority}
+                                    onChange={e => setField("priority", e.target.value)}
                                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
                                 >
                                     <option value="high">High</option>
@@ -180,8 +190,8 @@ export default function NewTask() {
                             <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">Assignee</label>
                                 <select
-                                    value={assigneeId}
-                                    onChange={e => setAssigneeId(e.target.value)}
+                                    value={form.assigneeId}
+                                    onChange={e => setField("assigneeId", e.target.value)}
                                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
                                 >
                                     <option value="">— unassigned —</option>
@@ -200,13 +210,12 @@ export default function NewTask() {
                             </label>
                             <input
                                 type="date"
-                                value={deadline}
-                                onChange={e => setDeadline(e.target.value)}
+                                value={form.deadline}
+                                onChange={e => setField("deadline", e.target.value)}
                                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
                             />
                         </div>
                     </div>
-
                 </div>
 
                 {/* ── Right panel ── */}
@@ -299,7 +308,7 @@ export default function NewTask() {
                                         </div>
                                         {res && (
                                             <p className="text-xs text-gray-400">
-                                                {res.name} · {res.resource_type} · total qty: {res.total_quantity}
+                                                {res.name} · {res.resource_type} · available: {r.available ?? res.total_quantity}
                                             </p>
                                         )}
                                         <button
@@ -326,7 +335,6 @@ export default function NewTask() {
                 <p className="mt-4 text-sm text-red-600">{error}</p>
             )}
 
-            {/* Action buttons */}
             <div className="flex justify-end gap-3 mt-6">
                 <button
                     onClick={() => navigate(`/app/project-realization/projects/${project_id}`)}

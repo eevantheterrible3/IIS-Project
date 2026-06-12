@@ -1,12 +1,22 @@
+import uuid
+from datetime import datetime
+
 from fastapi import HTTPException
 
 from models.task import Task
-from schemas.task_schema import CreateTaskRequest, UpdateTaskRequest, TaskListResponse, TaskDetailResponse
+from schemas.task_schema import (
+    CreateTaskRequest,
+    CreateTaskWithResourcesRequest,
+    TaskDetailResponse,
+    TaskListResponse,
+    UpdateTaskRequest,
+)
 
 
 class TaskService:
-    def __init__(self, repository):
+    def __init__(self, repository, task_resource_service=None):
         self.repository = repository
+        self.task_resource_service = task_resource_service
 
     async def get_by_project(self, project_id: str) -> list[TaskListResponse]:
         tasks = await self.repository.get_by_project(project_id)
@@ -56,3 +66,29 @@ class TaskService:
             raise HTTPException(status_code=404, detail="Task not found")
         await self.repository.delete(task)
         return {"message": "Task deleted"}
+
+    # ── Project Realization method ─────────────────────────────────────────────
+
+    async def create_for_pr(self, project_id: str, data: CreateTaskWithResourcesRequest, first_step_id: str):
+        deadline = datetime.strptime(data.deadline, "%Y-%m-%d") if data.deadline else None
+
+        task = Task(
+            task_id=str(uuid.uuid4()),
+            name=data.name,
+            description=data.description,
+            priority=data.priority,
+            task_workflow_id=data.task_workflow_id,
+            current_step_id=first_step_id,
+            deadline=deadline,
+            assigned_user_id=data.assigned_user_id,
+            project_id=project_id,
+        )
+        await self.repository.create(task)
+
+        for res in data.resources:
+            if res.resource_id:
+                await self.task_resource_service.create_for_task(
+                    task.task_id, res.resource_id, res.quantity, res.reserved_from, res.reserved_until
+                )
+
+        return {"task_id": task.task_id, "detail": "Task created"}

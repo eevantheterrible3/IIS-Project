@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronDown, ChevronRight, X, Plus, UserPlus } from "lucide-react";
+import { ChevronDown, ChevronRight, X, UserPlus } from "lucide-react";
 import { authFetch } from "@/lib/api";
 
 const PRIORITY_CLS = {
@@ -85,6 +85,7 @@ export default function ProjectDetail() {
     const memberIds = new Set(members.map(m => m.user_id));
     const usersToAdd = allUsers.filter(u => !memberIds.has(u.user_id));
 
+    const diffTime = Math.abs( - date1);
     return (
         <div className="p-6 space-y-5">
 
@@ -200,10 +201,9 @@ export default function ProjectDetail() {
                             </tr>
                         )}
                         {tasks.map(task => (
-                            <>
+                            <React.Fragment key={task.task_id}>
                                 {/* Task row */}
                                 <tr
-                                    key={task.task_id}
                                     className={`border-b border-gray-50 transition-colors ${
                                         task.is_late ? "bg-red-50 hover:bg-red-100" : "hover:bg-gray-50"
                                     }`}
@@ -228,6 +228,9 @@ export default function ProjectDetail() {
                                                 {task.name}
                                             </span>
                                             {task.is_late && (
+                                                <span className="text-xs text-red-500 font-medium">Late</span>
+                                            )}
+                                            {Math.abs(task.deadline - Date.now) && (
                                                 <span className="text-xs text-red-500 font-medium">Late</span>
                                             )}
                                         </div>
@@ -296,7 +299,7 @@ export default function ProjectDetail() {
                                         </td>
                                     </tr>
                                 )}
-                            </>
+                            </React.Fragment>
                         ))}
                     </tbody>
                 </table>
