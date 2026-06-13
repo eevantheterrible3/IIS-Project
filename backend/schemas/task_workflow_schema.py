@@ -13,7 +13,7 @@ class StepInWorkflowRequest(BaseModel):
 
 class CreateTaskWorkflowRequest(BaseModel):
     name: str
-    created_by: str
+    created_by: str | None = None
     steps: list[StepInWorkflowRequest] = []
 
 
@@ -27,7 +27,12 @@ class TaskWorkflowResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-# ── Project Realization schema (ordered steps, no metadata) ──────────────────
+# ── Project Realization schemas ───────────────────────────────────────────────
+
+class UpdateTaskWorkflowRequest(BaseModel):
+    name: str
+    steps: list[StepInWorkflowRequest]
+
 
 class WorkflowStepOrderedResponse(BaseModel):
     step_id: str

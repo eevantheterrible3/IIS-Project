@@ -67,7 +67,6 @@ class TaskService:
         await self.repository.delete(task)
         return {"message": "Task deleted"}
 
-    # ── Project Realization method ─────────────────────────────────────────────
 
     async def create_for_pr(self, project_id: str, data: CreateTaskWithResourcesRequest, first_step_id: str):
         deadline = datetime.strptime(data.deadline, "%Y-%m-%d") if data.deadline else None

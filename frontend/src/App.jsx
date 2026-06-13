@@ -13,6 +13,7 @@ import PRProjects from "./pages/project_realization/Projects";
 import PRProjectDetail from "./pages/project_realization/ProjectDetail";
 import PRNewTask from "./pages/project_realization/NewTask";
 import PRResources from "./pages/project_realization/Resources";
+import PRWorkflows from "./pages/project_realization/Workflows";
 import WorkflowActionsList from "./pages/app/WorkflowActionsList";
 import WorkflowsList from "./pages/app/WorkflowsList";
 import WorkflowInstancesList from "./pages/app/WorkflowInstancesList";
@@ -50,6 +51,7 @@ function App() {
                     <Route path="projects/:project_id" element={<PRProjectDetail />} />
                     <Route path="projects/:project_id/new-task" element={<PRNewTask />} />
                     <Route path="resources" element={<PRResources />} />
+                    <Route path="workflows" element={<PRWorkflows />} />
                 </Route>
 
                 <Route path="/" element={<Navigate to="/app/documents" replace />} />
