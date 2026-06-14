@@ -1,10 +1,3 @@
-from fastapi import APIRouter, Depends, HTTPException
-from jose import JWTError
-from pydantic import BaseModel
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
 from core.security import (
     create_access_token,
     create_refresh_token,
@@ -14,8 +7,14 @@ from core.security import (
     verify_password,
 )
 from database import get_db
+from fastapi import APIRouter, Depends, HTTPException
+from jose import JWTError
 from models.user import User
 from models.work import Work
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -72,7 +71,6 @@ async def login(request: LoginRequest, db: AsyncSession = Depends(get_db)):
     if not user or not verify_password(request.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    # Upgrade plaintext passwords to bcrypt on first successful login
     if not is_hashed(user.password):
         user.password = hash_password(request.password)
         await db.commit()

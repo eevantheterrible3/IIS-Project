@@ -1,58 +1,15 @@
 import { useEffect, useState } from "react";
-import { Pencil, Zap } from "lucide-react";
+import { MessageSquare, Pencil, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { authFetch } from "@/lib/api";
 
-function PromptTable({ rows, columns, emptyIcon: Icon, emptyText, onEdit }) {
-    return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
-                <thead>
-                    <tr className="border-b border-slate-100">
-                        {columns.map(col => (
-                            <th key={col.key} className={`text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider ${col.className || ""}`}>{col.label}</th>
-                        ))}
-                        <th className="px-5 py-3 w-12" />
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                    {rows.length === 0 && (
-                        <tr>
-                            <td colSpan={columns.length + 1} className="px-5 py-16 text-center">
-                                <Icon size={32} className="mx-auto mb-3 text-slate-300" />
-                                <p className="text-slate-400 text-sm">{emptyText}</p>
-                            </td>
-                        </tr>
-                    )}
-                    {rows.map(row => (
-                        <tr key={row.id} className="hover:bg-slate-50 transition-colors group">
-                            {columns.map(col => (
-                                <td key={col.key} className={`px-5 py-3.5 ${col.cellClass || ""}`}>
-                                    {col.render ? col.render(row) : row[col.key]}
-                                </td>
-                            ))}
-                            <td className="px-5 py-3.5">
-                                <button
-                                    className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                                    onClick={() => onEdit(row)}
-                                >
-                                    <Pencil size={13} />
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-    );
-}
-
 export default function SystemPrompts() {
     const [docTypes, setDocTypes] = useState([]);
     const [sectionTemplates, setSectionTemplates] = useState([]);
+    const [feedback, setFeedback] = useState([]);
     const [editTarget, setEditTarget] = useState(null);
     const [editPrompt, setEditPrompt] = useState("");
 
@@ -62,11 +19,17 @@ export default function SystemPrompts() {
         const types = await authFetch("/document-types").then(r => r.json());
         setDocTypes(types);
         const all = [];
+        const feedbackGroups = [];
         for (const t of types) {
             const tpls = await authFetch(`/document-types/${t.document_type_id}/section-templates`).then(r => r.json());
             tpls.forEach(tpl => all.push({ ...tpl, document_type_name: t.name }));
+            const ratings = await authFetch(`/document-types/${t.document_type_id}/ratings`).then(r => r.json());
+            if (Array.isArray(ratings) && ratings.length > 0) {
+                feedbackGroups.push({ document_type_name: t.name, ratings });
+            }
         }
         setSectionTemplates(all);
+        setFeedback(feedbackGroups);
     }
 
     function openEdit(item, type) { setEditTarget({ ...item, _type: type }); setEditPrompt(item.system_prompt || ""); }
@@ -85,17 +48,6 @@ export default function SystemPrompts() {
         fetchAll();
     }
 
-    const docTypeColumns = [
-        { key: "name", label: "Document Type", render: row => <span className="font-semibold text-slate-800">{row.name}</span> },
-        { key: "system_prompt", label: "System Prompt", cellClass: "max-w-lg", render: row => <span className="font-mono text-xs text-slate-400 truncate block max-w-lg">{row.system_prompt || <span className="not-italic text-slate-300">No prompt set</span>}</span> },
-    ];
-
-    const sectionColumns = [
-        { key: "name", label: "Section", render: row => <span className="font-semibold text-slate-800">{row.name}</span> },
-        { key: "document_type_name", label: "Document Type", render: row => <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{row.document_type_name}</span> },
-        { key: "system_prompt", label: "System Prompt", cellClass: "max-w-sm", render: row => <span className="font-mono text-xs text-slate-400 truncate block max-w-sm">{row.system_prompt || <span className="not-italic text-slate-300">No prompt set</span>}</span> },
-    ];
-
     return (
         <div className="p-8 space-y-10">
             <div>
@@ -110,13 +62,47 @@ export default function SystemPrompts() {
                     </div>
                     <h2 className="text-sm font-semibold text-slate-700">General Prompts — Document Types</h2>
                 </div>
-                <PromptTable
-                    rows={docTypes.map(t => ({ ...t, id: t.document_type_id }))}
-                    columns={docTypeColumns}
-                    emptyIcon={Zap}
-                    emptyText="No document types found."
-                    onEdit={item => openEdit(item, "doctype")}
-                />
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-slate-100">
+                                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Document Type</th>
+                                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">System Prompt</th>
+                                <th className="px-5 py-3 w-12" />
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {docTypes.length === 0 && (
+                                <tr>
+                                    <td colSpan={3} className="px-5 py-16 text-center">
+                                        <Zap size={32} className="mx-auto mb-3 text-slate-300" />
+                                        <p className="text-slate-400 text-sm">No document types found.</p>
+                                    </td>
+                                </tr>
+                            )}
+                            {docTypes.map(t => (
+                                <tr key={t.document_type_id} className="hover:bg-slate-50 transition-colors group">
+                                    <td className="px-5 py-3.5">
+                                        <span className="font-semibold text-slate-800">{t.name}</span>
+                                    </td>
+                                    <td className="px-5 py-3.5 max-w-lg">
+                                        <span className="font-mono text-xs text-slate-400 truncate block max-w-lg">
+                                            {t.system_prompt || <span className="not-italic text-slate-300">No prompt set</span>}
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-3.5">
+                                        <button
+                                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                            onClick={() => openEdit(t, "doctype")}
+                                        >
+                                            <Pencil size={13} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
             <section>
@@ -126,13 +112,94 @@ export default function SystemPrompts() {
                     </div>
                     <h2 className="text-sm font-semibold text-slate-700">Section Template Prompts</h2>
                 </div>
-                <PromptTable
-                    rows={sectionTemplates.map(t => ({ ...t, id: t.section_template_id }))}
-                    columns={sectionColumns}
-                    emptyIcon={Zap}
-                    emptyText="No section templates found."
-                    onEdit={item => openEdit(item, "section")}
-                />
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <table className="w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-slate-100">
+                                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Section</th>
+                                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Document Type</th>
+                                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">System Prompt</th>
+                                <th className="px-5 py-3 w-12" />
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {sectionTemplates.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-5 py-16 text-center">
+                                        <Zap size={32} className="mx-auto mb-3 text-slate-300" />
+                                        <p className="text-slate-400 text-sm">No section templates found.</p>
+                                    </td>
+                                </tr>
+                            )}
+                            {sectionTemplates.map(tpl => (
+                                <tr key={tpl.section_template_id} className="hover:bg-slate-50 transition-colors group">
+                                    <td className="px-5 py-3.5">
+                                        <span className="font-semibold text-slate-800">{tpl.name}</span>
+                                    </td>
+                                    <td className="px-5 py-3.5">
+                                        <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{tpl.document_type_name}</span>
+                                    </td>
+                                    <td className="px-5 py-3.5 max-w-sm">
+                                        <span className="font-mono text-xs text-slate-400 truncate block max-w-sm">
+                                            {tpl.system_prompt || <span className="not-italic text-slate-300">No prompt set</span>}
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-3.5">
+                                        <button
+                                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                            onClick={() => openEdit(tpl, "section")}
+                                        >
+                                            <Pencil size={13} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section>
+                <div className="flex items-center gap-2 mb-4">
+                    <div className="w-6 h-6 rounded-md bg-amber-50 flex items-center justify-center">
+                        <MessageSquare size={13} className="text-amber-500" />
+                    </div>
+                    <h2 className="text-sm font-semibold text-slate-700">User Feedback</h2>
+                    <span className="text-xs text-slate-400">Use these ratings and comments to refine the prompts above.</span>
+                </div>
+                {feedback.length === 0 ? (
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+                        <MessageSquare size={28} className="mx-auto mb-3 text-slate-300" />
+                        <p className="text-slate-400 text-sm">No feedback collected yet.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-5">
+                        {feedback.map((group) => (
+                            <div key={group.document_type_name} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
+                                    <span className="text-sm font-semibold text-slate-700">{group.document_type_name}</span>
+                                    <span className="ml-2 text-xs text-slate-400">{group.ratings.length} rating{group.ratings.length !== 1 ? "s" : ""}</span>
+                                </div>
+                                <div className="divide-y divide-slate-50">
+                                    {group.ratings.map((r) => (
+                                        <div key={r.document_rating_id} className="px-5 py-3.5">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <div className="flex items-center gap-0.5">
+                                                    {[1, 2, 3, 4, 5].map((n) => (
+                                                        <Star key={n} size={13} className={n <= r.score ? "fill-amber-400 text-amber-400" : "text-slate-200"} />
+                                                    ))}
+                                                </div>
+                                                {r.document_name && <span className="text-xs text-slate-400">· {r.document_name}</span>}
+                                                {r.user_name && <span className="text-xs text-slate-400">· {r.user_name}</span>}
+                                            </div>
+                                            {r.comment && <p className="text-sm text-slate-600 leading-relaxed">{r.comment}</p>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
             <Dialog open={!!editTarget} onOpenChange={() => setEditTarget(null)}>

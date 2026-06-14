@@ -39,7 +39,7 @@ export default function Login() {
         }
 
         localStorage.setItem("selectedProject", JSON.stringify(selected));
-        window.location.href = "/projects";
+        window.location.href = "/app/documents";
     }
 
     return (

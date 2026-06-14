@@ -6,8 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependencies import get_current_user
 from database import get_db
 from models.user import User
+from repositories.document_rating_repository import DocumentRatingRepository
 from repositories.document_type_repository import DocumentTypeRepository
 from repositories.section_template_repository import SectionTemplateRepository
+from schemas.document_rating_schema import RatingResponse
 from schemas.document_type_schema import (
     DocumentTypeCreateRequest,
     DocumentTypeDetailResponse,
@@ -93,3 +95,24 @@ async def create_section_template(
 ):
     service = SectionTemplateService(SectionTemplateRepository(db))
     return await service.create(document_type_id, request)
+
+
+@router.get("/{document_type_id}/ratings", response_model=List[RatingResponse])
+async def get_document_type_ratings(
+    document_type_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ratings = await DocumentRatingRepository(db).get_by_document_type(document_type_id)
+    return [
+        RatingResponse(
+            document_rating_id=r.document_rating_id,
+            document_id=r.document_id,
+            score=r.score,
+            comment=r.comment,
+            created_at=r.created_at,
+            document_name=r.document.name if r.document else None,
+            user_name=f"{r.user.name} {r.user.last_name}" if r.user else None,
+        )
+        for r in ratings
+    ]

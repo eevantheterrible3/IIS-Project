@@ -1,9 +1,18 @@
-import asyncio
 import os
+from typing import List, Optional
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from pydantic import BaseModel, Field
+
+
+class GeneratedSection(BaseModel):
+    section_name: str = Field(description="The exact name of the section, copied verbatim from the request")
+    content: str = Field(description="The generated content for this section")
+
+
+class GeneratedDoc(BaseModel):
+    sections: List[GeneratedSection] = Field(description="All requested document sections, in order")
 
 
 class AIDocumentService:
@@ -11,55 +20,90 @@ class AIDocumentService:
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY environment variable is not set")
-        self.llm = ChatGoogleGenerativeAI(
+        llm = ChatGoogleGenerativeAI(
             model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
             google_api_key=api_key,
         )
+        self.structured_llm = llm.with_structured_output(GeneratedDoc)
 
-    async def _generate_section(
-        self,
-        document_type_system_prompt: str | None,
-        section_name: str,
-        section_system_prompt: str | None,
-        section_content_structure: str | None,
-        user_prompt: str,
-    ) -> str:
-        system = document_type_system_prompt or (
+    @staticmethod
+    def _section_name(section, index: int) -> str:
+        return section.section_template.name if section.section_template else f"Section {index + 1}"
+
+    def _build_system_prompt(self, sections: list, document_type_system_prompt: Optional[str]) -> str:
+        base = document_type_system_prompt or (
             "You are a professional document writer. Write clear, concise, and well-structured content."
         )
-
-        human_parts = [
-            f"Generate content for the following document section.\n\nSection: {section_name}",
+        parts = [
+            base,
+            "",
+            "Generate content for each of the following sections. "
+            "Return every section using its exact name as given below.",
         ]
-        if section_system_prompt:
-            human_parts.append(f"Section instructions: {section_system_prompt}")
-        if section_content_structure:
-            human_parts.append(f"Expected structure: {section_content_structure}")
-        human_parts.append(f"\nUser's request: {user_prompt}")
-        human_parts.append("\nWrite the section content:")
+        for i, s in enumerate(sections):
+            parts.append(f"\nSection: {self._section_name(s, i)}")
+            if s.section_template and s.section_template.system_prompt:
+                parts.append(f"Instructions: {s.section_template.system_prompt}")
+            if s.section_template and s.section_template.content_structure:
+                parts.append(f"Expected structure: {s.section_template.content_structure}")
+        return "\n".join(parts)
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "{system}"),
-            ("human", "{human}"),
-        ])
-        chain = prompt | self.llm | StrOutputParser()
-        return await chain.ainvoke({"system": system, "human": "\n\n".join(human_parts)})
+    def _map_back(self, sections: list, generated) -> dict:
+        gen_sections = generated.sections if hasattr(generated, "sections") else (generated or {}).get("sections", [])
 
-    async def generate_all_sections(
+        def name_of(gs):
+            return (gs.section_name if hasattr(gs, "section_name") else gs.get("section_name", "")).strip().lower()
+
+        def content_of(gs):
+            return gs.content if hasattr(gs, "content") else gs.get("content", "")
+
+        by_name = {name_of(gs): content_of(gs) for gs in gen_sections}
+
+        # Positional fallback is only safe when the model returned a full set that
+        # lines up one-to-one with our sections. For partial returns (e.g. the user
+        # asked to redo a single section) we must match strictly by name, otherwise
+        # the returned content gets smeared onto the wrong, unmatched sections.
+        full_alignment = len(gen_sections) == len(sections)
+
+        result = {}
+        for i, s in enumerate(sections):
+            name = self._section_name(s, i).strip().lower()
+            if name in by_name:
+                result[s.document_section_id] = by_name[name]
+            elif full_alignment:
+                result[s.document_section_id] = content_of(gen_sections[i])
+        return result
+
+    async def generate_document(
         self,
         sections: list,
         user_prompt: str,
-        document_type_system_prompt: str | None,
+        document_type_system_prompt: Optional[str],
     ) -> dict:
-        tasks = [
-            self._generate_section(
-                document_type_system_prompt=document_type_system_prompt,
-                section_name=s.section_template.name if s.section_template else f"Section {i + 1}",
-                section_system_prompt=s.section_template.system_prompt if s.section_template else None,
-                section_content_structure=s.section_template.content_structure if s.section_template else None,
-                user_prompt=user_prompt,
-            )
-            for i, s in enumerate(sections)
+        messages = [
+            SystemMessage(content=self._build_system_prompt(sections, document_type_system_prompt)),
+            HumanMessage(content=user_prompt or "Generate the document."),
         ]
-        results = await asyncio.gather(*tasks)
-        return {s.document_section_id: content for s, content in zip(sections, results)}
+        generated = await self.structured_llm.ainvoke(messages)
+        return self._map_back(sections, generated)
+
+    async def refine_document(
+        self,
+        sections: list,
+        conversation: list,
+        document_type_system_prompt: Optional[str],
+    ) -> dict:
+        """conversation: ordered list of {role: 'user'|'assistant', text: str} held by the frontend
+        for the current generation session (initial prompt, each generated draft, each refinement)."""
+        messages = [SystemMessage(content=self._build_system_prompt(sections, document_type_system_prompt))]
+        for turn in conversation or []:
+            role = turn.get("role")
+            text = turn.get("text") or turn.get("content") or ""
+            if role == "user":
+                messages.append(HumanMessage(content=text))
+            elif role == "assistant":
+                messages.append(AIMessage(content=text))
+        if len(messages) == 1:
+            messages.append(HumanMessage(content="Generate the document."))
+        generated = await self.structured_llm.ainvoke(messages)
+        return self._map_back(sections, generated)

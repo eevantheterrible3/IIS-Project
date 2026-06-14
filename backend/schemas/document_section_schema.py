@@ -7,6 +7,15 @@ class DocumentSectionUpdateRequest(BaseModel):
     content: Optional[str] = None
 
 
+class ConversationTurn(BaseModel):
+    role: str
+    text: Optional[str] = None
+
+
+class RefineSectionsRequest(BaseModel):
+    history: list[ConversationTurn] = []
+
+
 class DocumentSectionResponse(BaseModel):
     document_section_id: str
     document_id: str

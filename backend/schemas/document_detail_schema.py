@@ -14,6 +14,7 @@ class DocumentTagResponse(BaseModel):
 class DocumentDetailResponse(BaseModel):
     document_id: str
     name: str
+    status: str | None = None
     user_prompt: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None

@@ -11,7 +11,7 @@ class DocumentTypeRepository:
 
     async def get_all(self):
         result = await self.db.execute(
-            select(DocumentType).options(selectinload(DocumentType.section_templates))
+            select(DocumentType).options(selectinload(DocumentType.section_templates)).order_by(DocumentType.document_type_id)
         )
         return result.scalars().all()
 

@@ -9,17 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { authFetch } from "@/lib/api";
 
-function timeAgo(dateStr) {
-    if (!dateStr) return "—";
-    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-    if (diff < 60) return "just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    const days = Math.floor(diff / 86400);
-    if (days < 7) return `${days}d ago`;
-    return `${Math.floor(days / 7)}w ago`;
-}
-
 const statusColors = {
     draft: "bg-amber-50 text-amber-700 border-amber-200",
     active: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -109,14 +98,13 @@ export default function DocumentsList() {
                             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Description</th>
                             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</th>
                             <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                            <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Modified</th>
                             <th className="px-5 py-3 w-20" />
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                         {filtered.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="px-5 py-16 text-center">
+                                <td colSpan={5} className="px-5 py-16 text-center">
                                     <FileText size={32} className="mx-auto mb-3 text-slate-300" />
                                     <p className="text-slate-500 font-medium">No documents yet</p>
                                     <p className="text-slate-400 text-xs mt-1">Create your first document to get started.</p>
@@ -149,7 +137,6 @@ export default function DocumentsList() {
                                         {doc.status}
                                     </span>
                                 </td>
-                                <td className="px-5 py-3.5 text-slate-400 text-xs">{timeAgo(doc.updated_at || doc.created_at)}</td>
                                 <td className="px-5 py-3.5">
                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                                         <button

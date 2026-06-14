@@ -36,7 +36,7 @@ class DocumentService:
             project_id=request.project_id,
             document_type_id=request.document_type_id,
             user_prompt=request.user_prompt,
-            status="draft",
+            status="active",
         )
         return await self.document_repository.create_document(document, section_templates)
 
