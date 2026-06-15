@@ -8,11 +8,14 @@ export default function Projects() {
     const [projects, setProjects] = useState([]);
     const [documentsByProject, setDocumentsByProject] = useState({});
     const [openedProjectId, setOpenedProjectId] = useState(null);
+    const [openedDocumentsProjectId, setOpenedDocumentsProjectId] = useState(null);
     const [user, setUser] = useState(null);
     const [selectedProject, setSelectedProject] = useState(null);
     const [showMenu, setShowMenu] = useState(false);
+
     const navigate = useNavigate();
     const location = useLocation();
+
     const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
     const [showAddProjectModal, setShowAddProjectModal] = useState(false);
     const [showEditProjectModal, setShowEditProjectModal] = useState(false);
@@ -29,28 +32,50 @@ export default function Projects() {
                 const selectedProjectId = location.state?.selectedProjectId;
 
                 if (selectedProjectId) {
-                    const project = data.find((p) => p.project_id === selectedProjectId);
+                    const project = data.find(
+                        (p) => String(p.project_id) === String(selectedProjectId)
+                    );
 
                     if (project) {
                         setSelectedProject(project);
-                        setOpenedProjectId(selectedProjectId);
+                        setOpenedProjectId(project.project_id);
                     }
                 }
             });
     }, []);
 
-    async function toggleProject(projectId) {
-        const project = projects.find((p) => p.project_id === projectId);
+    function toggleProject(projectId) {
+        const project = projects.find(
+            (p) => String(p.project_id) === String(projectId)
+        );
+
         setSelectedProject(project);
-        if (openedProjectId === projectId) {
+
+        if (String(openedProjectId) === String(projectId)) {
             setOpenedProjectId(null);
+            setOpenedDocumentsProjectId(null);
             return;
         }
 
         setOpenedProjectId(projectId);
+        setOpenedDocumentsProjectId(null);
+    }
+
+    async function toggleDocuments(projectId) {
+        if (String(openedDocumentsProjectId) === String(projectId)) {
+            setOpenedDocumentsProjectId(null);
+            return;
+        }
+
+        setOpenedDocumentsProjectId(projectId);
 
         if (!documentsByProject[projectId]) {
             const response = await authFetch(`/projects/${projectId}/documents`);
+
+            if (!response.ok) {
+                alert("Failed to load documents.");
+                return;
+            }
 
             const documents = await response.json();
 
@@ -60,28 +85,37 @@ export default function Projects() {
             }));
         }
     }
+
     function isAdmin() {
         return projects.some((project) => project.role === "ADMIN");
     }
+
     function formatRole(role) {
         return role?.toLowerCase().replaceAll("_", " ");
     }
+
     async function handleDeleteProject() {
-        const response = await authFetch(`/projects/${selectedProject.project_id}`, { method: "DELETE" });
+        const response = await authFetch(`/projects/${selectedProject.project_id}`, {
+            method: "DELETE",
+        });
 
         if (!response.ok) {
             alert("Failed to delete project.");
             return;
         }
 
-        setProjects(projects.filter(
-            (project) => project.project_id !== selectedProject.project_id
-        ));
+        setProjects(
+            projects.filter(
+                (project) => project.project_id !== selectedProject.project_id
+            )
+        );
 
         setSelectedProject(null);
         setOpenedProjectId(null);
+        setOpenedDocumentsProjectId(null);
         setShowDeleteProjectModal(false);
     }
+
     async function handleCreateProject(projectData) {
         const response = await authFetch("/projects", {
             method: "POST",
@@ -99,8 +133,10 @@ export default function Projects() {
         setProjects([...projects, createdProject]);
         setSelectedProject(createdProject);
         setOpenedProjectId(createdProject.project_id);
+        setOpenedDocumentsProjectId(null);
         setShowAddProjectModal(false);
     }
+
     async function handleUpdateProject(projectData) {
         const response = await authFetch(`/projects/${selectedProject.project_id}`, {
             method: "PUT",
@@ -115,11 +151,13 @@ export default function Projects() {
 
         const updatedProject = await response.json();
 
-        setProjects(projects.map((project) =>
-            project.project_id === updatedProject.project_id
-                ? updatedProject
-                : project
-        ));
+        setProjects(
+            projects.map((project) =>
+                project.project_id === updatedProject.project_id
+                    ? updatedProject
+                    : project
+            )
+        );
 
         setSelectedProject(updatedProject);
         setShowEditProjectModal(false);
@@ -129,6 +167,7 @@ export default function Projects() {
         <div className="projects-page">
             <header className="projects-header">
                 <div className="projects-logo">DOCUMENT MANAGEMENT</div>
+
                 <div className="user-menu-container">
                     <div
                         className="user-avatar"
@@ -160,38 +199,78 @@ export default function Projects() {
                         onClick={() => {
                             setSelectedProject(null);
                             setOpenedProjectId(null);
+                            setOpenedDocumentsProjectId(null);
                         }}
                     >
                         ▼ Projects
                     </div>
 
-                    {projects.map((project) => (
-                        <div key={project.project_id} className="project-group">
-                            <div
-                                className="project-item"
-                                onClick={() => toggleProject(project.project_id)}
-                            >
-                                <span>
-                                    {openedProjectId === project.project_id ? "▼" : "▶"}
-                                </span>
-                                <span>{project.name}</span>
-                            </div>
+                    {projects.map((project) => {
+                        const isProjectOpen =
+                            String(openedProjectId) === String(project.project_id);
 
-                            {openedProjectId === project.project_id && (
-                                <div className="documents-list">
-                                    {(documentsByProject[project.project_id] || []).map((document) => (
-                                        <div
-                                            key={document.document_id}
-                                            className="document-item"
-                                            onClick={() => navigate(`/documents/${document.document_id}`)}
-                                        >
-                                            {document.name}
-                                        </div>
-                                    ))}
+                        const areDocumentsOpen =
+                            String(openedDocumentsProjectId) === String(project.project_id);
+
+                        const projectDocuments =
+                            documentsByProject[project.project_id] || [];
+
+                        return (
+                            <div key={project.project_id} className="project-group">
+                                <div
+                                    className="project-item"
+                                    onClick={() => toggleProject(project.project_id)}
+                                >
+                                    <span>{isProjectOpen ? "▼" : "▶"}</span>
+                                    <span>{project.name}</span>
                                 </div>
-                            )}
-                        </div>
-                    ))}
+
+                                {isProjectOpen && (
+                                    <div className="project-tabs-list">
+                                        <div
+                                            className="project-tab-item"
+                                            onClick={() => navigate(`/projects/${project.project_id}/documents`)}
+                                        >
+                                            <span>▶</span>
+                                            <span>Documents</span>
+                                        </div>
+
+                                        {areDocumentsOpen && (
+                                            <div className="documents-list">
+                                                {projectDocuments.length === 0 ? (
+                                                    <div className="document-item empty-document-item">
+                                                        No documents
+                                                    </div>
+                                                ) : (
+                                                    projectDocuments.map((document) => (
+                                                        <div
+                                                            key={document.document_id}
+                                                            className="document-item"
+                                                            onClick={() =>
+                                                                navigate(`/documents/${document.document_id}`)
+                                                            }
+                                                        >
+                                                            {document.name}
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div
+                                            className="project-tab-item"
+                                            onClick={() =>
+                                                navigate(`/projects/${project.project_id}/permissions`)
+                                            }
+                                        >
+                                            <span>▶</span>
+                                            <span>Permissions</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </aside>
 
                 <main className="projects-content">
@@ -227,7 +306,9 @@ export default function Projects() {
 
                             <p className="project-status">
                                 Status:{" "}
-                                <span className={`status-text ${selectedProject.status?.toLowerCase()}`}>
+                                <span
+                                    className={`status-text ${selectedProject.status?.toLowerCase()}`}
+                                >
                                     {selectedProject.status?.toLowerCase()}
                                 </span>
                             </p>
@@ -236,18 +317,19 @@ export default function Projects() {
                         <div className="empty-project-state">
                             <h1>Select a project</h1>
 
-                                {isAdmin() && (
-                                    <button
-                                        className="project-add-button"
-                                        onClick={() => setShowAddProjectModal(true)}
-                                    >
-                                        + Add project
-                                    </button>
-                                )}
+                            {isAdmin() && (
+                                <button
+                                    className="project-add-button"
+                                    onClick={() => setShowAddProjectModal(true)}
+                                >
+                                    + Add project
+                                </button>
+                            )}
                         </div>
                     )}
                 </main>
             </div>
+
             {showDeleteProjectModal && (
                 <div className="delete-modal-overlay">
                     <div className="delete-modal">
@@ -272,6 +354,7 @@ export default function Projects() {
                     </div>
                 </div>
             )}
+
             {showAddProjectModal && (
                 <ProjectFormModal
                     title="Add project"
@@ -279,6 +362,7 @@ export default function Projects() {
                     onSave={handleCreateProject}
                 />
             )}
+
             {showEditProjectModal && (
                 <ProjectFormModal
                     title="Edit project"
@@ -288,6 +372,5 @@ export default function Projects() {
                 />
             )}
         </div>
-
     );
 }

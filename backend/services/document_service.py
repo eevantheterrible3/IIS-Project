@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from pathlib import Path
-from schemas.all_document_schema import DocumentListResponse, DocumentListItemResponse, DocumentCreateRequest
+from schemas.all_document_schema import DocumentListResponse, ProjectDocumentListResponse, DocumentListItemResponse, DocumentCreateRequest
 from schemas.document_detail_schema import (
     DocumentDetailResponse,
     DocumentMetadataResponse,
@@ -40,13 +40,37 @@ class DocumentService:
         )
         return await self.document_repository.create_document(document, section_templates)
 
-    async def get_documents_for_project(self, project_id: int) -> list[DocumentListResponse]:
-        documents = await self.document_repository.get_documents_by_project_id(project_id)
+    async def get_documents_for_project(
+        self,
+        project_id: str,
+        name: str | None = None,
+        author: str | None = None,
+        date: str | None = None,
+        document_type: str | None = None,
+        tag: str | None = None,
+    ) -> list[ProjectDocumentListResponse]:
+        documents = await self.document_repository.get_documents_by_project_id(
+            project_id,
+            name=name,
+            author=author,
+            date=date,
+            document_type=document_type,
+            tag=tag,
+        )
 
         return [
-            DocumentListResponse(
+            ProjectDocumentListResponse(
                 document_id=document.document_id,
-                name=document.name
+                name=document.name,
+                document_type_name=document.document_type.name if document.document_type else None,
+                created_at=document.created_at,
+                status=document.status,
+                tags=[
+                    item.tag.name
+                    for item in document.tags
+                    if item.tag is not None
+                ],
+                author=f"{document.user.name} {document.user.last_name}" if document.user else None,
             )
             for document in documents
         ]

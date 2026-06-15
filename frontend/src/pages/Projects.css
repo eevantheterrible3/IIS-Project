@@ -53,12 +53,13 @@
 }
 
 .project-item {
-	display: flex;
-	gap: 8px;
-	align-items: center;
-	cursor: pointer;
-	font-size: 15px;
-	margin-left: 20px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    cursor: pointer;
+    font-size: 15px;
+    margin-left: 20px;
+    margin-bottom: 8px;
 }
 
 .documents-list {
@@ -202,4 +203,39 @@
 }
 .sidebar-title {
 	cursor: pointer;
+}
+
+.project-tabs-list {
+    margin-left: 42px;
+    margin-top: 8px;
+}
+
+.project-tab-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+.project-tab-item:hover {
+    color: #2563eb;
+}
+
+.project-tabs-list .documents-list {
+    margin-left: 28px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+}
+
+.project-tabs-list .document-item {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #333;
+    cursor: pointer;
+}
+
+.project-tabs-list .document-item:hover {
+    color: #2563eb;
 }
