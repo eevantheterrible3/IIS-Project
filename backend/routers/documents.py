@@ -1,7 +1,7 @@
 import json
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -94,6 +94,33 @@ async def create_document(
         updated_at=doc.updated_at,
     )
 
+@router.post("/upload", response_model=DocumentListItemResponse)
+async def upload_document(
+    project_id: str = Form(...),
+    name: str = Form(...),
+    metadata_json: str = Form("[]"),
+    document_type_id: str | None = Form(None),
+    user_prompt: str | None = Form(None),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = DocumentService(DocumentRepository(db))
+
+    try:
+        metadata = json.loads(metadata_json)
+    except json.JSONDecodeError:
+        metadata = []
+
+    return await service.upload_document(
+        project_id=project_id,
+        user_id=current_user.user_id,
+        name=name,
+        file=file,
+        metadata=metadata,
+        document_type_id=document_type_id,
+        user_prompt=user_prompt,
+    )
 
 @router.get("/{document_id}", response_model=DocumentDetailResponse)
 async def get_document_details(

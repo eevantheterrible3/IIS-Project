@@ -111,6 +111,23 @@ class DocumentRepository:
         await self.db.commit()
         await self.db.refresh(document)
         return document
+    
+    async def create_uploaded_document(
+        self,
+        document: Document,
+        metadata_items: list[DocumentMetadata],
+    ):
+        self.db.add(document)
+        await self.db.flush()
+
+        for metadata_item in metadata_items:
+            metadata_item.document_id = document.document_id
+            self.db.add(metadata_item)
+
+        await self.db.commit()
+        await self.db.refresh(document)
+
+        return document
 
     async def update_document_tags_and_metadata(self, document, tags, metadata):
         document.tags.clear()

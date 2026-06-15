@@ -342,7 +342,7 @@ export default function ProjectDocuments() {
 
                     <button
                         className="upload-document-button"
-                        onClick={() => navigate("/app/new-document")}
+                        onClick={() => navigate(`/projects/${projectId}/documents/upload`)}
                     >
                         + Upload document
                     </button>
