@@ -1,0 +1,174 @@
+.project-documents-page {
+    min-height: 100vh;
+    background: #f5f5f5;
+    font-family: Arial, sans-serif;
+}
+
+.project-documents-header {
+    height: 56px;
+    background: white;
+    border-bottom: 1px solid #dcdcdc;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 26px;
+}
+
+.project-documents-logo {
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.project-documents-layout {
+    width: 100%;
+    min-height: calc(100vh - 56px);
+    background: white;
+    display: flex;
+}
+
+.project-documents-sidebar {
+    width: 280px;
+    border-right: 1px solid #dcdcdc;
+    padding: 60px 26px;
+}
+
+.project-documents-content {
+    flex: 1;
+    padding: 85px 36px;
+}
+
+.project-documents-content h1 {
+    font-size: 24px;
+    font-weight: 400;
+    margin-bottom: 58px;
+}
+
+.documents-filters {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 46px;
+}
+
+.documents-filters input {
+    width: 125px;
+    height: 26px;
+    border: 1px solid #d8d8d8;
+    border-radius: 7px;
+    padding: 0 14px;
+    font-size: 14px;
+}
+
+.search-button {
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.clear-filters-button {
+    height: 28px;
+    border: 1px solid #d8d8d8;
+    background: white;
+    border-radius: 7px;
+    padding: 0 12px;
+    cursor: pointer;
+}
+
+.documents-table {
+    border-collapse: collapse;
+    min-width: 620px;
+    font-size: 14px;
+}
+
+.documents-table th {
+    text-align: left;
+    font-weight: 400;
+    padding: 0 8px 12px 8px;
+}
+
+.documents-table td {
+    padding: 7px 8px;
+    border-bottom: 1px solid #777;
+    border-right: 1px solid #777;
+}
+
+.documents-table td:last-child,
+.documents-table th:last-child {
+    border-right: none;
+}
+
+.no-documents-cell {
+    text-align: center;
+    color: #777;
+    padding: 18px 8px;
+}
+
+.activity-link {
+    border: none;
+    background: transparent;
+    color: blue;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.upload-document-button {
+    margin-top: 54px;
+    margin-left: 190px;
+    width: 215px;
+    height: 35px;
+    border: none;
+    border-radius: 6px;
+    background: #4f86e8;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.project-tabs-list {
+    margin-left: 42px;
+    margin-top: 8px;
+}
+
+.project-tab-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    margin-bottom: 8px;
+}
+
+.project-tab-item:hover {
+    color: #2563eb;
+}
+
+.active-tab {
+    color: #111;
+}
+
+.documents-list {
+    margin-left: 28px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+}
+
+.document-item {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #333;
+    cursor: pointer;
+}
+
+.document-item:hover {
+    color: #2563eb;
+}
+
+.empty-document-item {
+    color: #888;
+    cursor: default;
+}
+
+.empty-document-item:hover {
+    color: #888;
+}

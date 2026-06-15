@@ -6,36 +6,75 @@ import deleteIcon from "../assets/delete.png";
 import { useNavigate, useParams } from "react-router-dom";
 import EditDocumentModal from "../pages/EditDocumentModal";
 import Header from "../components/Header";
-import { authFetch, API_BASE } from "@/lib/api";
+import { authFetch } from "@/lib/api";
 
 export default function DocumentDetails() {
     const { documentId } = useParams();
+
     const [document, setDocument] = useState(null);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const navigate = useNavigate();
-    const [showEditModal, setShowEditModal] = useState(false);
     const [projectDocuments, setProjectDocuments] = useState([]);
+    const [pdfUrl, setPdfUrl] = useState(null);
+    const [pdfError, setPdfError] = useState(null);
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+
+    const navigate = useNavigate();
 
     useEffect(() => {
-        authFetch(`/documents/${documentId}`)
-            .then((response) => response.json())
-            .then((data) => setDocument(data));
+        async function loadDocument() {
+            const response = await authFetch(`/documents/${documentId}`);
+
+            if (!response.ok) {
+                alert("Failed to load document.");
+                return;
+            }
+
+            const data = await response.json();
+            setDocument(data);
+
+            const projectDocumentsResponse = await authFetch(`/projects/${data.project_id}/documents`);
+
+            if (!projectDocumentsResponse.ok) {
+                return;
+            }
+
+            const documents = await projectDocumentsResponse.json();
+            setProjectDocuments(documents);
+        }
+
+        loadDocument();
     }, [documentId]);
+
     useEffect(() => {
-        authFetch(`/documents/${documentId}`)
-            .then((response) => response.json())
-            .then((data) => {
-                setDocument(data);
+        let objectUrl = null;
 
-                authFetch(`/projects/${data.project_id}/documents`)
-                    .then((response) => response.json())
-                    .then((documents) => setProjectDocuments(documents));
-            });
+        async function loadPdf() {
+            setPdfUrl(null);
+            setPdfError(null);
+
+            const response = await authFetch(`/documents/${documentId}/file`);
+
+            if (!response.ok) {
+                console.error("Failed to load PDF:", response.status);
+                setPdfError("PDF could not be loaded.");
+                return;
+            }
+
+            const blob = await response.blob();
+            objectUrl = URL.createObjectURL(blob);
+            setPdfUrl(objectUrl);
+        }
+
+        loadPdf();
+
+        return () => {
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+        };
     }, [documentId]);
 
-    if (!document) {
-        return <div className="document-details-page">Loading...</div>;
-    }
     async function handleDelete() {
         const response = await authFetch(`/documents/delete/${documentId}`, {
             method: "DELETE",
@@ -47,6 +86,10 @@ export default function DocumentDetails() {
         }
 
         navigate("/projects");
+    }
+
+    if (!document) {
+        return <div className="document-details-page">Loading...</div>;
     }
 
     return (
@@ -64,18 +107,19 @@ export default function DocumentDetails() {
                             className="details-documents-title"
                             onClick={() =>
                                 navigate("/projects", {
-                                    state: { selectedProjectId: document.project_id }
+                                    state: { selectedProjectId: document.project_id },
                                 })
                             }
                         >
                             ▼ Documents
                         </div>
+
                         <div className="details-documents-list">
                             {projectDocuments.map((projectDocument) => (
                                 <div
                                     key={projectDocument.document_id}
                                     className={
-                                        projectDocument.document_id === documentId
+                                        String(projectDocument.document_id) === String(documentId)
                                             ? "details-document-selected"
                                             : "details-document-item"
                                     }
@@ -115,6 +159,7 @@ export default function DocumentDetails() {
                             </button>
                         </div>
                     </div>
+
                     <div className="document-tags">
                         {(document.tags || []).map((tag) => (
                             <span key={tag.name} className="document-tag">
@@ -122,19 +167,26 @@ export default function DocumentDetails() {
                             </span>
                         ))}
                     </div>
+
                     <div className="document-paper">
-                        <iframe
-                            src={`${API_BASE}/documents/${documentId}/file`}
-                            className="document-frame"
-                            title={document.name}
-                        />
+                        {pdfUrl ? (
+                            <iframe
+                                src={pdfUrl}
+                                className="document-frame"
+                                title={document.name}
+                            />
+                        ) : pdfError ? (
+                            <div className="pdf-error">{pdfError}</div>
+                        ) : (
+                            <div>Loading PDF...</div>
+                        )}
                     </div>
                 </main>
 
                 <aside className="metadata-panel">
                     <h3>Document Details</h3>
 
-                    {document.metadata.map((item) => (
+                    {(document.metadata || []).map((item) => (
                         <div key={item.name} className="metadata-item">
                             <strong>{item.name}</strong>
                             <span>{item.value}</span>
@@ -142,6 +194,7 @@ export default function DocumentDetails() {
                     ))}
                 </aside>
             </div>
+
             {showDeleteModal && (
                 <div className="delete-modal-overlay">
                     <div className="delete-modal">
@@ -166,6 +219,7 @@ export default function DocumentDetails() {
                     </div>
                 </div>
             )}
+
             {showEditModal && (
                 <EditDocumentModal
                     document={document}
