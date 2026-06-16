@@ -163,6 +163,19 @@ export default function DocumentDetails() {
     if (!document) {
         return <div className="document-details-page">Loading...</div>;
     }
+    async function handleOpenActivityReport() {
+        const response = await authFetch(`/documents/${documentId}/activities/report`);
+
+        if (!response.ok) {
+            alert("Failed to generate activity report.");
+            return;
+        }
+
+        const blob = await response.blob();
+        const fileUrl = URL.createObjectURL(blob);
+
+        window.open(fileUrl, "_blank");
+    }
 
     return (
         <div className="document-details-page">
@@ -219,6 +232,12 @@ export default function DocumentDetails() {
                                 onClick={handleOpenActivities}
                             >
                                 Activity
+                            </button>
+                            <button
+                                className="document-action-button activity-report-button"
+                                onClick={handleOpenActivityReport}
+                            >
+                                Activity PDF
                             </button>
 
                             <button

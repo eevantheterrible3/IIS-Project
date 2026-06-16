@@ -375,3 +375,11 @@
     font-size: 15px;
     padding: 12px 0;
 }
+.activity-report-button {
+    background-color: #2e9d57;
+    color: white;
+}
+.activity-report-button:hover {
+        background-color: #248448;
+
+}
