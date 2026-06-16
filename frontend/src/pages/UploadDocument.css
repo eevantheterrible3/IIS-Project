@@ -94,6 +94,87 @@
     color: #777;
 }
 
+.ai-tags-section {
+    margin-top: 8px;
+    margin-bottom: 24px;
+}
+
+.ai-tags-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.ai-tags-title-row h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.generate-tags-button {
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: white;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.generate-tags-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.generate-tags-error {
+    margin-bottom: 10px;
+    color: #dc2626;
+    font-size: 14px;
+}
+
+.suggested-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: white;
+    border: 1px solid #d1d1d1;
+    border-radius: 6px;
+    padding: 10px;
+    min-height: 42px;
+    box-sizing: border-box;
+}
+
+.suggested-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #e0ecff;
+    color: #1e3a8a;
+    border-radius: 999px;
+    padding: 6px 9px 6px 12px;
+    font-size: 13px;
+}
+
+.remove-tag-button {
+    border: none;
+    background: transparent;
+    color: #1e3a8a;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+}
+
+.no-ai-tags-message {
+    background: white;
+    border: 1px dashed #c4c4c4;
+    border-radius: 6px;
+    padding: 11px 12px;
+    font-size: 13px;
+    color: #777;
+}
+
 .metadata-section {
     margin-top: 8px;
 }

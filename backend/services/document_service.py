@@ -56,6 +56,7 @@ class DocumentService:
         name: str,
         file,
         metadata: list,
+        tags: list | None = None,
         document_type_id: str | None = None,
         user_prompt: str | None = None,
     ):
@@ -89,13 +90,16 @@ class DocumentService:
                 metadata_items.append(
                     DocumentMetadata(
                         name=metadata_name.strip(),
-                        value=metadata_value
+                        value=metadata_value,
                     )
                 )
+
+        tag_names = self._clean_tag_names(tags or [])
 
         uploaded_document = await self.document_repository.create_uploaded_document(
             document=document,
             metadata_items=metadata_items,
+            tag_names=tag_names,
         )
 
         return DocumentListItemResponse(
@@ -108,6 +112,23 @@ class DocumentService:
             created_at=uploaded_document.created_at,
             updated_at=uploaded_document.updated_at,
         )
+    
+    def _clean_tag_names(self, tags: list) -> list[str]:
+        cleaned_tags = []
+
+        for tag in tags:
+            if not isinstance(tag, str):
+                continue
+
+            cleaned_tag = tag.strip().lower()
+
+            if not cleaned_tag:
+                continue
+
+            if cleaned_tag not in cleaned_tags:
+                cleaned_tags.append(cleaned_tag)
+
+        return cleaned_tags
 
     async def get_documents_for_project(
         self,

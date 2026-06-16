@@ -1,7 +1,6 @@
 from sqlalchemy import select, func, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
 from models.document import Document
 from models.document_section import DocumentSection
 from models.is_marked import IsMarked
@@ -116,6 +115,7 @@ class DocumentRepository:
         self,
         document: Document,
         metadata_items: list[DocumentMetadata],
+        tag_names: list[str] | None = None,
     ):
         self.db.add(document)
         await self.db.flush()
@@ -123,6 +123,25 @@ class DocumentRepository:
         for metadata_item in metadata_items:
             metadata_item.document_id = document.document_id
             self.db.add(metadata_item)
+
+        for tag_name in tag_names or []:
+            result = await self.db.execute(
+                select(Tag).where(Tag.name == tag_name)
+            )
+
+            tag = result.scalar_one_or_none()
+
+            if tag is None:
+                tag = Tag(name=tag_name)
+                self.db.add(tag)
+                await self.db.flush()
+
+            self.db.add(
+                IsMarked(
+                    document_id=document.document_id,
+                    tag_id=tag.tag_id,
+                )
+            )
 
         await self.db.commit()
         await self.db.refresh(document)
