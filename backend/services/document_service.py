@@ -1,6 +1,15 @@
+import uuid
 from fastapi import HTTPException
 from pathlib import Path
-from schemas.all_document_schema import DocumentListResponse, ProjectDocumentListResponse, DocumentListItemResponse, DocumentCreateRequest
+
+from models.document import Document
+from models.metadata import DocumentMetadata
+from schemas.all_document_schema import (
+    DocumentListResponse,
+    ProjectDocumentListResponse,
+    DocumentListItemResponse,
+    DocumentCreateRequest
+)
 from schemas.document_detail_schema import (
     DocumentDetailResponse,
     DocumentMetadataResponse,
@@ -39,6 +48,66 @@ class DocumentService:
             status="draft",
         )
         return await self.document_repository.create_document(document, section_templates)
+
+    async def upload_document(
+        self,
+        project_id: str,
+        user_id: str,
+        name: str,
+        file,
+        metadata: list,
+        document_type_id: str | None = None,
+        user_prompt: str | None = None,
+    ):
+        upload_dir = Path("uploads/documents")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        original_filename = Path(file.filename).name
+        stored_filename = f"{uuid.uuid4()}_{original_filename}"
+        file_path = upload_dir / stored_filename
+
+        content = await file.read()
+        file_path.write_bytes(content)
+
+        document = Document(
+            name=name,
+            user_id=user_id,
+            project_id=project_id,
+            document_type_id=document_type_id if document_type_id else None,
+            user_prompt=user_prompt,
+            file_path=str(file_path),
+            status="draft",
+        )
+
+        metadata_items = []
+
+        for item in metadata:
+            metadata_name = item.get("name")
+            metadata_value = item.get("value")
+
+            if metadata_name and metadata_name.strip():
+                metadata_items.append(
+                    DocumentMetadata(
+                        name=metadata_name.strip(),
+                        value=metadata_value
+                    )
+                )
+
+        uploaded_document = await self.document_repository.create_uploaded_document(
+            document=document,
+            metadata_items=metadata_items,
+        )
+
+        return DocumentListItemResponse(
+            document_id=uploaded_document.document_id,
+            name=uploaded_document.name,
+            user_prompt=uploaded_document.user_prompt,
+            document_type_id=uploaded_document.document_type_id,
+            document_type_name=None,
+            status=uploaded_document.status,
+            created_at=uploaded_document.created_at,
+            updated_at=uploaded_document.updated_at,
+        )
 
     async def get_documents_for_project(
         self,
