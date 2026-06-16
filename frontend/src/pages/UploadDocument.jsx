@@ -21,6 +21,11 @@ export default function UploadDocument() {
         { name: "Category", value: "", isDefault: true, inputType: "text" },
         { name: "Creation Date", value: "", isDefault: true, inputType: "date" },
     ]);
+
+    const [suggestedTags, setSuggestedTags] = useState([]);
+    const [isGeneratingTags, setIsGeneratingTags] = useState(false);
+    const [generateTagsError, setGenerateTagsError] = useState("");
+
     const [isUploading, setIsUploading] = useState(false);
 
     useEffect(() => {
@@ -77,6 +82,56 @@ export default function UploadDocument() {
         setMetadata((prev) => prev.filter((_, i) => i !== index));
     }
 
+    function handleFileChange(event) {
+        const selectedFile = event.target.files[0] || null;
+
+        setFile(selectedFile);
+        setSuggestedTags([]);
+        setGenerateTagsError("");
+    }
+
+    async function handleGenerateAiTags() {
+        if (!name.trim()) {
+            alert("Document name is required before generating AI tags.");
+            return;
+        }
+
+        if (!file) {
+            alert("Please select a PDF file first.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("name", name.trim());
+        formData.append("file", file);
+
+        setIsGeneratingTags(true);
+        setGenerateTagsError("");
+        setSuggestedTags([]);
+
+        const response = await authFetch("/documents/suggest-tags", {
+            method: "POST",
+            body: formData,
+        });
+
+        setIsGeneratingTags(false);
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => null);
+            setGenerateTagsError(error?.detail || "Failed to generate AI tags.");
+            return;
+        }
+
+        const data = await response.json();
+        setSuggestedTags(data.tags || []);
+    }
+
+    function removeSuggestedTag(tagToRemove) {
+        setSuggestedTags((prev) =>
+            prev.filter((tag) => tag.toLowerCase() !== tagToRemove.toLowerCase())
+        );
+    }
+
     async function handleUpload(event) {
         event.preventDefault();
 
@@ -94,11 +149,11 @@ export default function UploadDocument() {
             .filter(
                 (item) =>
                     item.name.trim() !== "" &&
-                    String(item.value).trim() !== ""
+                    String(item.value ?? "").trim() !== ""
             )
             .map((item) => ({
                 name: item.name.trim(),
-                value: String(item.value).trim(),
+                value: String(item.value ?? "").trim(),
             }));
 
         const formData = new FormData();
@@ -106,6 +161,7 @@ export default function UploadDocument() {
         formData.append("name", name.trim());
         formData.append("file", file);
         formData.append("metadata_json", JSON.stringify(cleanedMetadata));
+        formData.append("tags_json", JSON.stringify(suggestedTags));
 
         setIsUploading(true);
 
@@ -249,7 +305,11 @@ export default function UploadDocument() {
                             <label>Document Name</label>
                             <input
                                 value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => {
+                                    setName(e.target.value);
+                                    setSuggestedTags([]);
+                                    setGenerateTagsError("");
+                                }}
                                 placeholder="Enter document name..."
                             />
                         </div>
@@ -261,7 +321,7 @@ export default function UploadDocument() {
                                 <input
                                     type="file"
                                     accept="application/pdf"
-                                    onChange={(e) => setFile(e.target.files[0])}
+                                    onChange={handleFileChange}
                                 />
 
                                 <div className="file-upload-icon">☁</div>
@@ -274,6 +334,50 @@ export default function UploadDocument() {
                                     PDF files only
                                 </div>
                             </label>
+                        </div>
+
+                        <div className="ai-tags-section">
+                            <div className="ai-tags-title-row">
+                                <h3>AI Suggested Tags</h3>
+
+                                <button
+                                    type="button"
+                                    className="generate-tags-button"
+                                    onClick={handleGenerateAiTags}
+                                    disabled={!file || !name.trim() || isGeneratingTags}
+                                >
+                                    {isGeneratingTags ? "Generating..." : "Generate AI Tags"}
+                                </button>
+                            </div>
+
+                            {generateTagsError && (
+                                <div className="generate-tags-error">
+                                    {generateTagsError}
+                                </div>
+                            )}
+
+                            {suggestedTags.length > 0 ? (
+                                <div className="suggested-tags-list">
+                                    {suggestedTags.map((tag) => (
+                                        <div key={tag} className="suggested-tag">
+                                            <span>{tag}</span>
+
+                                            <button
+                                                type="button"
+                                                className="remove-tag-button"
+                                                onClick={() => removeSuggestedTag(tag)}
+                                                title="Remove tag"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="no-ai-tags-message">
+                                    Generate AI tags to see suggestions.
+                                </div>
+                            )}
                         </div>
 
                         <div className="metadata-section">

@@ -1,14 +1,14 @@
 import json
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from tempfile import NamedTemporaryFile
+from services.pdf_text_extractor import PdfTextExtractor
+from services.ai_tag_service import AiTagService
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-
 from core.dependencies import get_current_user
 from database import get_db
 from models.document_version import DocumentVersion
@@ -99,6 +99,7 @@ async def upload_document(
     project_id: str = Form(...),
     name: str = Form(...),
     metadata_json: str = Form("[]"),
+    tags_json: str = Form("[]"),
     document_type_id: str | None = Form(None),
     user_prompt: str | None = Form(None),
     file: UploadFile = File(...),
@@ -112,15 +113,77 @@ async def upload_document(
     except json.JSONDecodeError:
         metadata = []
 
+    try:
+        tags = json.loads(tags_json)
+    except json.JSONDecodeError:
+        tags = []
+
+    if not isinstance(tags, list):
+        tags = []
+
     return await service.upload_document(
         project_id=project_id,
         user_id=current_user.user_id,
         name=name,
         file=file,
         metadata=metadata,
+        tags=tags,
         document_type_id=document_type_id,
         user_prompt=user_prompt,
     )
+
+@router.post("/suggest-tags")
+async def suggest_tags_for_uploaded_file(
+    name: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+
+    content = await file.read()
+
+    with NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        temp_file.write(content)
+        temp_file_path = temp_file.name
+
+    extractor = PdfTextExtractor()
+
+    try:
+        document_text = extractor.extract_text(temp_file_path, max_chars=5000)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    finally:
+        Path(temp_file_path).unlink(missing_ok=True)
+
+    if not document_text:
+        raise HTTPException(
+            status_code=400,
+            detail="No text could be extracted from this PDF. The document may be scanned."
+        )
+
+    ai_tag_service = AiTagService()
+
+    try:
+        tags = await ai_tag_service.suggest_tags(
+            document_name=name,
+            document_text=document_text,
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="AI tag service is currently unavailable."
+        )
+
+    if not tags:
+        raise HTTPException(
+            status_code=502,
+            detail="AI service did not return any tags."
+        )
+
+    return {
+        "tags": tags
+    }
 
 @router.get("/{document_id}", response_model=DocumentDetailResponse)
 async def get_document_details(
