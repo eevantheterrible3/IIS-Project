@@ -1,18 +1,22 @@
 import os
 from typing import List, Optional
 
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from pydantic import BaseModel, Field
 
 
 class GeneratedSection(BaseModel):
-    section_name: str = Field(description="The exact name of the section, copied verbatim from the request")
+    section_name: str = Field(
+        description="The exact name of the section, copied verbatim from the request"
+    )
     content: str = Field(description="The generated content for this section")
 
 
 class GeneratedDoc(BaseModel):
-    sections: List[GeneratedSection] = Field(description="All requested document sections, in order")
+    sections: List[GeneratedSection] = Field(
+        description="All requested document sections, in order"
+    )
 
 
 class AIDocumentService:
@@ -28,9 +32,15 @@ class AIDocumentService:
 
     @staticmethod
     def _section_name(section, index: int) -> str:
-        return section.section_template.name if section.section_template else f"Section {index + 1}"
+        return (
+            section.section_template.name
+            if section.section_template
+            else f"Section {index + 1}"
+        )
 
-    def _build_system_prompt(self, sections: list, document_type_system_prompt: Optional[str]) -> str:
+    def _build_system_prompt(
+        self, sections: list, document_type_system_prompt: Optional[str]
+    ) -> str:
         base = document_type_system_prompt or (
             "You are a professional document writer. Write clear, concise, and well-structured content."
         )
@@ -45,24 +55,34 @@ class AIDocumentService:
             if s.section_template and s.section_template.system_prompt:
                 parts.append(f"Instructions: {s.section_template.system_prompt}")
             if s.section_template and s.section_template.content_structure:
-                parts.append(f"Expected structure: {s.section_template.content_structure}")
+                parts.append(
+                    f"Expected structure: {s.section_template.content_structure}"
+                )
         return "\n".join(parts)
 
     def _map_back(self, sections: list, generated) -> dict:
-        gen_sections = generated.sections if hasattr(generated, "sections") else (generated or {}).get("sections", [])
+        gen_sections = (
+            generated.sections
+            if hasattr(generated, "sections")
+            else (generated or {}).get("sections", [])
+        )
 
         def name_of(gs):
-            return (gs.section_name if hasattr(gs, "section_name") else gs.get("section_name", "")).strip().lower()
+            return (
+                (
+                    gs.section_name
+                    if hasattr(gs, "section_name")
+                    else gs.get("section_name", "")
+                )
+                .strip()
+                .lower()
+            )
 
         def content_of(gs):
             return gs.content if hasattr(gs, "content") else gs.get("content", "")
 
         by_name = {name_of(gs): content_of(gs) for gs in gen_sections}
 
-        # Positional fallback is only safe when the model returned a full set that
-        # lines up one-to-one with our sections. For partial returns (e.g. the user
-        # asked to redo a single section) we must match strictly by name, otherwise
-        # the returned content gets smeared onto the wrong, unmatched sections.
         full_alignment = len(gen_sections) == len(sections)
 
         result = {}
@@ -81,7 +101,9 @@ class AIDocumentService:
         document_type_system_prompt: Optional[str],
     ) -> dict:
         messages = [
-            SystemMessage(content=self._build_system_prompt(sections, document_type_system_prompt)),
+            SystemMessage(
+                content=self._build_system_prompt(sections, document_type_system_prompt)
+            ),
             HumanMessage(content=user_prompt or "Generate the document."),
         ]
         generated = await self.structured_llm.ainvoke(messages)
@@ -95,7 +117,11 @@ class AIDocumentService:
     ) -> dict:
         """conversation: ordered list of {role: 'user'|'assistant', text: str} held by the frontend
         for the current generation session (initial prompt, each generated draft, each refinement)."""
-        messages = [SystemMessage(content=self._build_system_prompt(sections, document_type_system_prompt))]
+        messages = [
+            SystemMessage(
+                content=self._build_system_prompt(sections, document_type_system_prompt)
+            )
+        ]
         for turn in conversation or []:
             role = turn.get("role")
             text = turn.get("text") or turn.get("content") or ""

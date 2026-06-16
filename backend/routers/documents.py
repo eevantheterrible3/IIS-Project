@@ -1,13 +1,11 @@
 import json
-from typing import List
-
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
 from pathlib import Path
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
 
 from core.dependencies import get_current_user
 from database import get_db
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from models.document_rating import DocumentRating
 from models.document_version import DocumentVersion
 from models.user import User
@@ -20,11 +18,15 @@ from repositories.section_template_repository import SectionTemplateRepository
 from schemas.all_document_schema import DocumentCreateRequest, DocumentListItemResponse
 from schemas.document_detail_schema import DocumentDetailResponse
 from schemas.document_rating_schema import RatingCreateRequest, RatingResponse
-from schemas.document_section_schema import DocumentSectionResponse, RefineSectionsRequest
+from schemas.document_section_schema import (
+    DocumentSectionResponse,
+    RefineSectionsRequest,
+)
 from schemas.document_update_schema import UpdateDocumentRequest
 from schemas.document_version_schema import DocumentSaveRequest, DocumentVersionResponse
 from services.document_section_service import DocumentSectionService
 from services.document_service import DocumentService
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -44,9 +46,13 @@ async def create_document(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    section_templates = await SectionTemplateRepository(db).get_by_document_type(request.document_type_id)
+    section_templates = await SectionTemplateRepository(db).get_by_document_type(
+        request.document_type_id
+    )
     service = DocumentService(DocumentRepository(db))
-    doc = await service.create_document(request, current_user.user_id, section_templates)
+    doc = await service.create_document(
+        request, current_user.user_id, section_templates
+    )
     return DocumentListItemResponse(
         document_id=doc.document_id,
         name=doc.name,
@@ -85,7 +91,11 @@ async def get_document_file(
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File does not exist")
 
-    return FileResponse(path=file_path, media_type="application/pdf", headers={"Content-Disposition": "inline"})
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "inline"},
+    )
 
 
 @router.delete("/delete/{document_id}")
@@ -134,14 +144,18 @@ async def save_document(
             await section_repo.update(section)
 
     all_sections = await section_repo.get_by_document(document_id)
-    snapshot = json.dumps([
-        {
-            "section_name": s.section_template.name if s.section_template else f"Section {i + 1}",
-            "content": s.content or "",
-            "order_index": s.order_index,
-        }
-        for i, s in enumerate(all_sections)
-    ])
+    snapshot = json.dumps(
+        [
+            {
+                "section_name": s.section_template.name
+                if s.section_template
+                else f"Section {i + 1}",
+                "content": s.content or "",
+                "order_index": s.order_index,
+            }
+            for i, s in enumerate(all_sections)
+        ]
+    )
 
     version_repo = DocumentVersionRepository(db)
     latest = await version_repo.get_latest_number(document_id)
@@ -183,7 +197,9 @@ def _sections_response(sections) -> List[DocumentSectionResponse]:
             document_section_id=s.document_section_id,
             document_id=s.document_id,
             section_template_id=s.section_template_id,
-            section_name=s.section_template.name if s.section_template else f"Section {i + 1}",
+            section_name=s.section_template.name
+            if s.section_template
+            else f"Section {i + 1}",
             content=s.content,
             order_index=s.order_index,
             created_at=s.created_at,
@@ -195,6 +211,7 @@ def _sections_response(sections) -> List[DocumentSectionResponse]:
 
 def _build_ai_service():
     from services.ai_service import AIDocumentService
+
     try:
         return AIDocumentService()
     except ValueError as e:
@@ -210,7 +227,9 @@ async def _apply_generated(section_repo, document_id: str, generated: dict):
     return await section_repo.get_by_document(document_id)
 
 
-@router.post("/{document_id}/generate-sections", response_model=List[DocumentSectionResponse])
+@router.post(
+    "/{document_id}/generate-sections", response_model=List[DocumentSectionResponse]
+)
 async def generate_document_sections(
     document_id: str,
     current_user: User = Depends(get_current_user),
@@ -239,7 +258,9 @@ async def generate_document_sections(
     return _sections_response(updated)
 
 
-@router.post("/{document_id}/refine-sections", response_model=List[DocumentSectionResponse])
+@router.post(
+    "/{document_id}/refine-sections", response_model=List[DocumentSectionResponse]
+)
 async def refine_document_sections(
     document_id: str,
     request: RefineSectionsRequest,
@@ -280,14 +301,18 @@ async def accept_document(
 
     section_repo = DocumentSectionRepository(db)
     all_sections = await section_repo.get_by_document(document_id)
-    snapshot = json.dumps([
-        {
-            "section_name": s.section_template.name if s.section_template else f"Section {i + 1}",
-            "content": s.content or "",
-            "order_index": s.order_index,
-        }
-        for i, s in enumerate(all_sections)
-    ])
+    snapshot = json.dumps(
+        [
+            {
+                "section_name": s.section_template.name
+                if s.section_template
+                else f"Section {i + 1}",
+                "content": s.content or "",
+                "order_index": s.order_index,
+            }
+            for i, s in enumerate(all_sections)
+        ]
+    )
 
     version_repo = DocumentVersionRepository(db)
     latest = await version_repo.get_latest_number(document_id)
@@ -304,7 +329,9 @@ async def accept_document(
     return {"version_number": created.version_number, "status": "active"}
 
 
-@router.post("/{document_id}/revert/{version_id}", response_model=List[DocumentSectionResponse])
+@router.post(
+    "/{document_id}/revert/{version_id}", response_model=List[DocumentSectionResponse]
+)
 async def revert_document(
     document_id: str,
     version_id: str,
@@ -312,7 +339,12 @@ async def revert_document(
     db: AsyncSession = Depends(get_db),
 ):
     versions = await DocumentVersionRepository(db).get_by_document(document_id)
-    version = next((v for v in versions if v.document_version_id == version_id), None)
+    version = None
+    for v in versions:
+        if v.document_version_id == version_id:
+            version = v
+            break
+
     if not version:
         raise HTTPException(status_code=404, detail="Version not found")
 
