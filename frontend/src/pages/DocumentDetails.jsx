@@ -19,6 +19,11 @@ export default function DocumentDetails() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
 
+    const [showActivityModal, setShowActivityModal] = useState(false);
+    const [activities, setActivities] = useState([]);
+    const [activitiesLoading, setActivitiesLoading] = useState(false);
+    const [activitiesError, setActivitiesError] = useState(null);
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -88,6 +93,73 @@ export default function DocumentDetails() {
         navigate("/projects");
     }
 
+    async function handleOpenActivities() {
+        setShowActivityModal(true);
+        setActivitiesLoading(true);
+        setActivitiesError(null);
+
+        const response = await authFetch(`/documents/${documentId}/activities`);
+
+        if (!response.ok) {
+            setActivitiesError("Failed to load activities.");
+            setActivitiesLoading(false);
+            return;
+        }
+
+        const data = await response.json();
+        setActivities(data);
+        setActivitiesLoading(false);
+    }
+
+    function formatActivityType(type) {
+        const normalizedType = String(type).toLowerCase();
+
+        if (normalizedType.includes("view")) {
+            return "viewed the document";
+        }
+
+        if (normalizedType.includes("update")) {
+            return "updated the document";
+        }
+
+        if (normalizedType.includes("create")) {
+            return "created the document";
+        }
+
+        if (normalizedType.includes("delete")) {
+            return "deleted the document";
+        }
+
+        return normalizedType;
+    }
+
+    function formatActivityDate(date) {
+        if (!date) {
+            return "";
+        }
+
+        return new Date(date).toLocaleString("en-GB", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    }
+
+    function getActivityUserName(activity) {
+        if (!activity.user) {
+            return "Unknown user";
+        }
+
+        const name = activity.user.name || "";
+        const lastName = activity.user.last_name || "";
+
+        const fullName = `${name} ${lastName}`.trim();
+
+        return fullName || activity.user.email || "Unknown user";
+    }
+
     if (!document) {
         return <div className="document-details-page">Loading...</div>;
     }
@@ -142,6 +214,13 @@ export default function DocumentDetails() {
                         </div>
 
                         <div className="document-actions">
+                            <button
+                                className="document-action-button activity-button"
+                                onClick={handleOpenActivities}
+                            >
+                                Activity
+                            </button>
+
                             <button
                                 className="document-action-button edit-button"
                                 onClick={() => setShowEditModal(true)}
@@ -216,6 +295,52 @@ export default function DocumentDetails() {
                                 Delete
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showActivityModal && (
+                <div className="activity-modal-overlay">
+                    <div className="activity-modal">
+                        <div className="activity-modal-header">
+                            <h2>Document Activity</h2>
+
+                            <button
+                                className="activity-modal-close"
+                                onClick={() => setShowActivityModal(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {activitiesLoading ? (
+                            <div className="activity-modal-message">
+                                Loading activities...
+                            </div>
+                        ) : activitiesError ? (
+                            <div className="activity-modal-error">
+                                {activitiesError}
+                            </div>
+                        ) : activities.length === 0 ? (
+                            <div className="activity-modal-message">
+                                No activities recorded for this document.
+                            </div>
+                        ) : (
+                            <div className="activity-list">
+                                {activities.map((activity) => (
+                                    <div key={activity.activity_id} className="activity-item">
+                                        <div className="activity-text">
+                                            <strong>{getActivityUserName(activity)}</strong>{" "}
+                                            {formatActivityType(activity.type)}
+                                        </div>
+
+                                        <div className="activity-date">
+                                            {formatActivityDate(activity.date)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

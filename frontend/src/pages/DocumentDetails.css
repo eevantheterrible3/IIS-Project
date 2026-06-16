@@ -282,3 +282,96 @@
 .details-documents-title {
     cursor: pointer;
 }
+.activity-button {
+    background-color: #2e9d57;
+    color: white;
+}
+
+    .activity-button:hover {
+        background-color: #248448;
+    }
+
+.activity-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.activity-modal {
+    background: white;
+    width: 520px;
+    max-width: 90%;
+    max-height: 70vh;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    overflow-y: auto;
+}
+
+.activity-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+    .activity-modal-header h2 {
+        margin: 0;
+        font-size: 22px;
+        color: #1f2937;
+    }
+
+.activity-modal-close {
+    border: none;
+    background: transparent;
+    font-size: 28px;
+    cursor: pointer;
+    color: #555;
+}
+
+    .activity-modal-close:hover {
+        color: #000;
+    }
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.activity-item {
+    padding: 14px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background-color: #f9fafb;
+}
+
+.activity-text {
+    font-size: 15px;
+    color: #111827;
+    margin-bottom: 6px;
+}
+
+.activity-date {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.activity-modal-message {
+    color: #4b5563;
+    font-size: 15px;
+    padding: 12px 0;
+}
+
+.activity-modal-error {
+    color: #b91c1c;
+    font-size: 15px;
+    padding: 12px 0;
+}

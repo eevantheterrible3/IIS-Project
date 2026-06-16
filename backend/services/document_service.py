@@ -21,6 +21,7 @@ class DocumentService:
     def __init__(self, document_repository):
         self.document_repository = document_repository
 
+
     async def get_documents_for_user(self, user_id: int) -> list[DocumentListItemResponse]:
         documents = await self.document_repository.get_by_user_id(user_id)
         return [
