@@ -80,6 +80,16 @@ class TaskRepository:
         await self.db.commit()
         return history
 
+    async def get_for_projects(self, project_ids: list[str]):
+        if not project_ids:
+            return []
+        result = await self.db.execute(
+            select(Task)
+            .where(Task.project_id.in_(project_ids))
+            .options(selectinload(Task.current_step))
+        )
+        return result.scalars().all()
+
     async def create_with_resources(self, task: Task, subtasks: list, resources: list):
         self.db.add(task)
         for s in subtasks:

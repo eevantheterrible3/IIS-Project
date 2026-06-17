@@ -87,3 +87,36 @@ class ProjectDetailResponse(BaseModel):
     stats: ProjectStatsResponse
     members: list[MemberResponse]
     tasks: list[TaskSummaryResponse]
+
+
+class HomeProjectItem(BaseModel):
+    project_id: str
+    name: str
+    status: str | None
+    member_count: int
+    manager_name: str | None
+    deadline: str | None
+    task_total: int
+    task_completed: int
+    task_late: int
+    progress: int
+
+
+class HomeMyTask(BaseModel):
+    task_id: str
+    name: str
+    project_name: str
+    project_id: str
+    status: str | None
+    priority: str | None
+    deadline: str | None
+    is_late: bool
+    is_completed: bool
+
+
+class HomeResponse(BaseModel):
+    stats_projects: int
+    stats_active: int
+    stats_late: int
+    projects: list[HomeProjectItem]
+    my_tasks: list[HomeMyTask]

@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
-import { Home, FolderKanban, BarChart2, Package, GitBranch } from "lucide-react";
+import { Home, FolderKanban, Package, GitBranch } from "lucide-react";
 
 const navItems = [
-    { to: "/app/project-realization/home",      icon: Home,         label: "Home" },
-    { to: "/app/project-realization/projects",  icon: FolderKanban, label: "Projects" },
-    { to: "/app/project-realization/analytics", icon: BarChart2,    label: "Analytics" },
+    { to: "/app/project-realization/home",     icon: Home,         label: "Home" },
+    { to: "/app/project-realization/projects", icon: FolderKanban, label: "Projects" },
     { to: "/app/project-realization/resources", icon: Package,      label: "Resources" },
 ];
 
@@ -16,7 +15,6 @@ const adminNavItems = [
 const pageTitles = {
     "/app/project-realization/projects":  "Projects",
     "/app/project-realization/home":      "Home",
-    "/app/project-realization/analytics": "Analytics",
     "/app/project-realization/resources": "Resources",
     "/app/project-realization/workflows": "Workflows",
 };

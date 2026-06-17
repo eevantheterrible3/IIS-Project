@@ -12,6 +12,7 @@ import ProjectRealizationLayout from "./layouts/ProjectRealizationLayout";
 import PRProjects from "./pages/project_realization/Projects";
 import PRProjectDetail from "./pages/project_realization/ProjectDetail";
 import PRNewTask from "./pages/project_realization/NewTask";
+import PRHome from "./pages/project_realization/Home";
 import PRTaskDetail from "./pages/project_realization/TaskDetail";
 import PRResources from "./pages/project_realization/Resources";
 import PRWorkflows from "./pages/project_realization/Workflows";
@@ -47,7 +48,8 @@ function App() {
                 </Route>
 
                 <Route path="/app/project-realization" element={<ProjectRealizationLayout />}>
-                    <Route index element={<Navigate to="/app/project-realization/projects" replace />} />
+                    <Route index element={<Navigate to="/app/project-realization/home" replace />} />
+                    <Route path="home" element={<PRHome />} />
                     <Route path="projects" element={<PRProjects />} />
                     <Route path="projects/:project_id" element={<PRProjectDetail />} />
                     <Route path="projects/:project_id/new-task" element={<PRNewTask />} />
