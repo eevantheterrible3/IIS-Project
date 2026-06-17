@@ -143,6 +143,40 @@ export default function Projects() {
         setPermissionsLoading(false);
     }
 
+    async function handleRemovePermission(userId, permissionName) {
+        if (!selectedPermissionDocument) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            `Remove permission "${permissionName}" from this user?`
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        const response = await authFetch(
+            `/documents/${selectedPermissionDocument.document_id}/permissions/${encodeURIComponent(userId)}/${encodeURIComponent(permissionName)}`,
+            {
+                method: "DELETE",
+            }
+        );
+
+        if (!response.ok) {
+            alert("Failed to remove permission.");
+            return;
+        }
+
+        await loadPermissionsForDocument(selectedPermissionDocument);
+    }
+
+    function getRemovablePermissions(permission) {
+        return (permission.permissions || []).filter(
+            (item) => item.toLowerCase() !== "all"
+        );
+    }
+
     function isAdmin() {
         return projects.some((project) => project.role === "ADMIN");
     }
@@ -451,28 +485,67 @@ export default function Projects() {
                                                             <th>Create</th>
                                                             <th>Update</th>
                                                             <th>Delete</th>
+                                                            <th>Explicit permissions</th>
+                                                            <th>Actions</th>
                                                         </tr>
                                                     </thead>
 
                                                     <tbody>
-                                                        {documentPermissions.map((permission) => (
-                                                            <tr key={permission.user_id}>
-                                                                <td>
-                                                                    <div className="permission-user-name">
-                                                                        {permission.full_name}
-                                                                    </div>
-                                                                    <div className="permission-user-email">
-                                                                        {permission.email}
-                                                                    </div>
-                                                                </td>
-                                                                <td>{permission.role || "-"}</td>
-                                                                <td>{formatBoolean(permission.is_project_member)}</td>
-                                                                <td>{formatBoolean(permission.can_read)}</td>
-                                                                <td>{formatBoolean(permission.can_create)}</td>
-                                                                <td>{formatBoolean(permission.can_update)}</td>
-                                                                <td>{formatBoolean(permission.can_delete)}</td>
-                                                            </tr>
-                                                        ))}
+                                                        {documentPermissions.map((permission) => {
+                                                            const removablePermissions =
+                                                                getRemovablePermissions(permission);
+
+                                                            return (
+                                                                <tr key={permission.user_id}>
+                                                                    <td>
+                                                                        <div className="permission-user-name">
+                                                                            {permission.full_name}
+                                                                        </div>
+                                                                        <div className="permission-user-email">
+                                                                            {permission.email}
+                                                                        </div>
+                                                                    </td>
+
+                                                                    <td>{permission.role || "-"}</td>
+                                                                    <td>{formatBoolean(permission.is_project_member)}</td>
+                                                                    <td>{formatBoolean(permission.can_read)}</td>
+                                                                    <td>{formatBoolean(permission.can_create)}</td>
+                                                                    <td>{formatBoolean(permission.can_update)}</td>
+                                                                    <td>{formatBoolean(permission.can_delete)}</td>
+
+                                                                    <td>
+                                                                        {removablePermissions.length === 0
+                                                                            ? "-"
+                                                                            : removablePermissions.join(", ")}
+                                                                    </td>
+
+                                                                    <td>
+                                                                        {removablePermissions.length === 0 ? (
+                                                                            <span className="permission-no-action">
+                                                                                No explicit permissions
+                                                                            </span>
+                                                                        ) : (
+                                                                            <div className="permission-remove-actions">
+                                                                                {removablePermissions.map((permissionName) => (
+                                                                                    <button
+                                                                                        key={permissionName}
+                                                                                        className="permission-remove-button"
+                                                                                        onClick={() =>
+                                                                                            handleRemovePermission(
+                                                                                                permission.user_id,
+                                                                                                permissionName
+                                                                                            )
+                                                                                        }
+                                                                                    >
+                                                                                        Remove {permissionName}
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
                                                     </tbody>
                                                 </table>
                                             )}

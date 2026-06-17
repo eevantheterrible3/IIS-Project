@@ -446,3 +446,22 @@ async def get_document_permissions(
         document_id=document_id,
         current_user_id=current_user.user_id
     )
+@router.delete("/{document_id}/permissions/{user_id}/{permission_name}")
+async def remove_document_permission(
+    document_id: str,
+    user_id: str,
+    permission_name: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = PermissionService(
+        document_repository=DocumentRepository(db),
+        permission_repository=PermissionRepository(db)
+    )
+
+    return await service.remove_document_permission(
+        document_id=document_id,
+        target_user_id=user_id,
+        permission_name=permission_name,
+        current_user_id=current_user.user_id
+    )

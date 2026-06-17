@@ -326,3 +326,37 @@
 	color: #6b7280;
 	margin-top: 2px;
 }
+.permission-remove-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.permission-remove-button {
+	border: none;
+	border-radius: 6px;
+	background-color: #dc2626;
+	color: white;
+	padding: 6px 10px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+	.permission-remove-button:hover {
+		background-color: #b91c1c;
+	}
+
+.permission-no-action {
+	color: #6b7280;
+	font-size: 12px;
+}
+
+.permissions-details-panel {
+	overflow-x: auto;
+}
+
+.permissions-table {
+	min-width: 900px;
+}

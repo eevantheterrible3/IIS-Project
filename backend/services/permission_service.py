@@ -179,3 +179,43 @@ class PermissionService:
             can_update=can_update,
             can_delete=can_delete,
         )
+    async def remove_document_permission(
+        self,
+        document_id: str,
+        target_user_id: str,
+        permission_name: str,
+        current_user_id: str
+    ):
+        document = await self.document_repository.get_document_details(document_id)
+
+        if document is None:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        await self._check_can_view_permissions(
+            current_user_id=current_user_id,
+            project_id=document.project_id
+        )
+
+        normalized_permission = permission_name.lower().strip()
+
+        if normalized_permission == "all":
+            raise HTTPException(
+                status_code=400,
+                detail="Inherited permissions cannot be removed."
+            )
+
+        removed = await self.permission_repository.remove_document_permission(
+            document_id=document_id,
+            user_id=target_user_id,
+            permission_name=permission_name
+        )
+
+        if not removed:
+            raise HTTPException(
+                status_code=404,
+                detail="Permission not found for this user and document."
+            )
+
+        await self.permission_repository.db.commit()
+
+        return {"message": "Permission removed successfully"}

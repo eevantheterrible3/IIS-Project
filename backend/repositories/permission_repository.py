@@ -1,7 +1,9 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-
+from sqlalchemy import select, func
+from models.allows import Allows
+from models.permission import Permission
 from models.work import Work
 from models.role import Role
 from models.allows import Allows
@@ -56,7 +58,6 @@ class PermissionRepository:
         )
 
         return result.scalars().all()
-
     async def get_document_allowed_users(self, document_id: str):
         result = await self.db.execute(
             select(Allows)
@@ -68,3 +69,28 @@ class PermissionRepository:
         )
 
         return result.scalars().all()
+    async def remove_document_permission(
+        self,
+        document_id: str,
+        user_id: str,
+        permission_name: str
+   ) -> bool:
+        result = await self.db.execute(
+            select(Allows)
+            .join(Permission, Allows.permission_id == Permission.permission_id)
+            .where(
+                Allows.document_id == document_id,
+                Allows.user_id == user_id,
+                func.lower(Permission.name) == permission_name.lower()
+            )
+        )
+
+        allowed_permission = result.scalar_one_or_none()
+
+        if allowed_permission is None:
+            return False
+
+        await self.db.delete(allowed_permission)
+        await self.db.flush()
+
+        return True
