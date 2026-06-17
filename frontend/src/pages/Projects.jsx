@@ -13,6 +13,13 @@ export default function Projects() {
     const [selectedProject, setSelectedProject] = useState(null);
     const [showMenu, setShowMenu] = useState(false);
 
+    const [activeView, setActiveView] = useState("details");
+
+    const [selectedPermissionDocument, setSelectedPermissionDocument] = useState(null);
+    const [documentPermissions, setDocumentPermissions] = useState([]);
+    const [permissionsLoading, setPermissionsLoading] = useState(false);
+    const [permissionsError, setPermissionsError] = useState(null);
+
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -39,10 +46,33 @@ export default function Projects() {
                     if (project) {
                         setSelectedProject(project);
                         setOpenedProjectId(project.project_id);
+                        setActiveView("details");
                     }
                 }
             });
     }, []);
+
+    async function loadDocumentsForProject(projectId) {
+        if (documentsByProject[projectId]) {
+            return documentsByProject[projectId];
+        }
+
+        const response = await authFetch(`/projects/${projectId}/documents`);
+
+        if (!response.ok) {
+            alert("Failed to load documents.");
+            return [];
+        }
+
+        const documents = await response.json();
+
+        setDocumentsByProject((prev) => ({
+            ...prev,
+            [projectId]: documents,
+        }));
+
+        return documents;
+    }
 
     function toggleProject(projectId) {
         const project = projects.find(
@@ -50,6 +80,10 @@ export default function Projects() {
         );
 
         setSelectedProject(project);
+        setActiveView("details");
+        setSelectedPermissionDocument(null);
+        setDocumentPermissions([]);
+        setPermissionsError(null);
 
         if (String(openedProjectId) === String(projectId)) {
             setOpenedProjectId(null);
@@ -68,22 +102,45 @@ export default function Projects() {
         }
 
         setOpenedDocumentsProjectId(projectId);
+        await loadDocumentsForProject(projectId);
+    }
 
-        if (!documentsByProject[projectId]) {
-            const response = await authFetch(`/projects/${projectId}/documents`);
+    async function openPermissions(project) {
+        setSelectedProject(project);
+        setOpenedProjectId(project.project_id);
+        setOpenedDocumentsProjectId(null);
+        setActiveView("permissions");
+        setSelectedPermissionDocument(null);
+        setDocumentPermissions([]);
+        setPermissionsError(null);
 
-            if (!response.ok) {
-                alert("Failed to load documents.");
+        await loadDocumentsForProject(project.project_id);
+    }
+
+    async function loadPermissionsForDocument(document) {
+        setSelectedPermissionDocument(document);
+        setDocumentPermissions([]);
+        setPermissionsError(null);
+        setPermissionsLoading(true);
+
+        const response = await authFetch(`/documents/${document.document_id}/permissions`);
+
+        if (!response.ok) {
+            setPermissionsLoading(false);
+
+            if (response.status === 403) {
+                setPermissionsError("You do not have permission to view document permissions.");
                 return;
             }
 
-            const documents = await response.json();
-
-            setDocumentsByProject((prev) => ({
-                ...prev,
-                [projectId]: documents,
-            }));
+            setPermissionsError("Failed to load permissions.");
+            return;
         }
+
+        const data = await response.json();
+
+        setDocumentPermissions(data);
+        setPermissionsLoading(false);
     }
 
     function isAdmin() {
@@ -92,6 +149,10 @@ export default function Projects() {
 
     function formatRole(role) {
         return role?.toLowerCase().replaceAll("_", " ");
+    }
+
+    function formatBoolean(value) {
+        return value ? "Yes" : "No";
     }
 
     async function handleDeleteProject() {
@@ -134,6 +195,7 @@ export default function Projects() {
         setSelectedProject(createdProject);
         setOpenedProjectId(createdProject.project_id);
         setOpenedDocumentsProjectId(null);
+        setActiveView("details");
         setShowAddProjectModal(false);
     }
 
@@ -162,6 +224,10 @@ export default function Projects() {
         setSelectedProject(updatedProject);
         setShowEditProjectModal(false);
     }
+
+    const selectedProjectDocuments = selectedProject
+        ? documentsByProject[selectedProject.project_id] || []
+        : [];
 
     return (
         <div className="projects-page">
@@ -200,6 +266,10 @@ export default function Projects() {
                             setSelectedProject(null);
                             setOpenedProjectId(null);
                             setOpenedDocumentsProjectId(null);
+                            setActiveView("details");
+                            setSelectedPermissionDocument(null);
+                            setDocumentPermissions([]);
+                            setPermissionsError(null);
                         }}
                     >
                         ▼ Projects
@@ -259,11 +329,14 @@ export default function Projects() {
 
                                         <div
                                             className="project-tab-item"
-                                            onClick={() =>
-                                                navigate(`/projects/${project.project_id}/permissions`)
-                                            }
+                                            onClick={() => openPermissions(project)}
                                         >
-                                            <span>▶</span>
+                                            <span>
+                                                {activeView === "permissions" &&
+                                                    selectedProject?.project_id === project.project_id
+                                                    ? "▼"
+                                                    : "▶"}
+                                            </span>
                                             <span>Permissions</span>
                                         </div>
                                     </div>
@@ -274,7 +347,7 @@ export default function Projects() {
                 </aside>
 
                 <main className="projects-content">
-                    {selectedProject ? (
+                    {selectedProject && activeView === "details" && (
                         <>
                             <div className="project-details-header">
                                 <h1 className="project-title">
@@ -313,7 +386,104 @@ export default function Projects() {
                                 </span>
                             </p>
                         </>
-                    ) : (
+                    )}
+
+                    {selectedProject && activeView === "permissions" && (
+                        <div className="project-permissions-view">
+                            <h1 className="project-title">
+                                {selectedProject.name} - Permissions
+                            </h1>
+
+                            <div className="permissions-layout">
+                                <div className="permissions-documents-panel">
+                                    <h3>Documents</h3>
+
+                                    {selectedProjectDocuments.length === 0 ? (
+                                        <div className="permissions-empty">
+                                            No documents for this project.
+                                        </div>
+                                    ) : (
+                                        selectedProjectDocuments.map((document) => (
+                                            <button
+                                                key={document.document_id}
+                                                className={
+                                                    selectedPermissionDocument?.document_id === document.document_id
+                                                        ? "permission-document-item selected"
+                                                        : "permission-document-item"
+                                                }
+                                                onClick={() => loadPermissionsForDocument(document)}
+                                            >
+                                                {document.name}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+
+                                <div className="permissions-details-panel">
+                                    {!selectedPermissionDocument ? (
+                                        <div className="permissions-empty">
+                                            Select a document to view permissions.
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <h3>{selectedPermissionDocument.name}</h3>
+
+                                            {permissionsLoading ? (
+                                                <div className="permissions-empty">
+                                                    Loading permissions...
+                                                </div>
+                                            ) : permissionsError ? (
+                                                <div className="permissions-error">
+                                                    {permissionsError}
+                                                </div>
+                                            ) : documentPermissions.length === 0 ? (
+                                                <div className="permissions-empty">
+                                                    No permissions found for this document.
+                                                </div>
+                                            ) : (
+                                                <table className="permissions-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>User</th>
+                                                            <th>Role</th>
+                                                            <th>Project member</th>
+                                                            <th>Read</th>
+                                                            <th>Create</th>
+                                                            <th>Update</th>
+                                                            <th>Delete</th>
+                                                        </tr>
+                                                    </thead>
+
+                                                    <tbody>
+                                                        {documentPermissions.map((permission) => (
+                                                            <tr key={permission.user_id}>
+                                                                <td>
+                                                                    <div className="permission-user-name">
+                                                                        {permission.full_name}
+                                                                    </div>
+                                                                    <div className="permission-user-email">
+                                                                        {permission.email}
+                                                                    </div>
+                                                                </td>
+                                                                <td>{permission.role || "-"}</td>
+                                                                <td>{formatBoolean(permission.is_project_member)}</td>
+                                                                <td>{formatBoolean(permission.can_read)}</td>
+                                                                <td>{formatBoolean(permission.can_create)}</td>
+                                                                <td>{formatBoolean(permission.can_update)}</td>
+                                                                <td>{formatBoolean(permission.can_delete)}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {!selectedProject && (
                         <div className="empty-project-state">
                             <h1>Select a project</h1>
 

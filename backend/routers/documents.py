@@ -34,6 +34,9 @@ from services.document_service import DocumentService
 from repositories.activity_repository import ActivityRepository
 from models.activity import ActivityType
 from schemas.activity_schema import ActivityResponse
+from services.permission_service import PermissionService
+from repositories.permission_repository import PermissionRepository
+from schemas.document_permission_schema import DocumentUserPermissionResponse
 
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
@@ -427,4 +430,19 @@ async def get_document_activities_report(
         headers={
             "Content-Disposition": f'inline; filename="document_activity_{document_id}.pdf"'
         }
+    )
+@router.get("/{document_id}/permissions", response_model=list[DocumentUserPermissionResponse])
+async def get_document_permissions(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = PermissionService(
+        document_repository=DocumentRepository(db),
+        permission_repository=PermissionRepository(db)
+    )
+
+    return await service.get_document_permissions(
+        document_id=document_id,
+        current_user_id=current_user.user_id
     )
