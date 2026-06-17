@@ -1,6 +1,11 @@
 from pydantic import BaseModel
 
 
+
+class AddDocumentPermissionsRequest(BaseModel):
+    user_ids: list[str]
+    permissions: list[str]
+
 class DocumentUserPermissionResponse(BaseModel):
     user_id: str
     username: str | None = None

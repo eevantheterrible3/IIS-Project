@@ -23,6 +23,7 @@ from routers.workflow_instances import router as workflow_instances_router
 from routers.condition_types import router as condition_types_router
 from routers.conditions import router as conditions_router
 from routers.workflow_instance_steps import router as workflow_instance_steps_router
+from routers.users import router as users_router
 
 app = FastAPI(title="IIS API")
 app.include_router(auth_router)
@@ -47,6 +48,7 @@ app.include_router(workflow_instances_router)
 app.include_router(condition_types_router)
 app.include_router(conditions_router)
 app.include_router(workflow_instance_steps_router)
+app.include_router(users_router, prefix="/users", tags=["users"])
 
 app.add_middleware(
     CORSMiddleware,

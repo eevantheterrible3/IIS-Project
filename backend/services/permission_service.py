@@ -219,3 +219,92 @@ class PermissionService:
         await self.permission_repository.db.commit()
 
         return {"message": "Permission removed successfully"}
+    async def add_document_permissions(
+        self,
+        document_id: str,
+        user_ids: list[str],
+        permission_names: list[str],
+        current_user_id: str
+    ):
+        document = await self.document_repository.get_document_details(document_id)
+
+        if document is None:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        await self._check_can_view_permissions(
+            current_user_id=current_user_id,
+            project_id=document.project_id
+        )
+
+        if not user_ids:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one user must be selected."
+            )
+
+        if not permission_names:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one permission must be selected."
+            )
+
+        users = await self.permission_repository.get_users_by_ids(user_ids)
+
+        if len(users) != len(set(user_ids)):
+            raise HTTPException(
+                status_code=400,
+                detail="One or more selected users do not exist."
+            )
+
+        permissions = await self.permission_repository.get_permissions_by_names(
+            permission_names
+        )
+
+        found_permission_names = {
+            permission.name.lower().strip()
+            for permission in permissions
+        }
+
+        requested_permission_names = {
+            permission_name.lower().strip()
+            for permission_name in permission_names
+        }
+
+        missing_permissions = requested_permission_names - found_permission_names
+
+        if missing_permissions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Permissions do not exist: {', '.join(missing_permissions)}"
+            )
+
+        added_count = 0
+        skipped_count = 0
+
+        for user in users:
+            for permission in permissions:
+                exists = await self.permission_repository.allow_permission_exists(
+                    document_id=document_id,
+                    user_id=user.user_id,
+                    permission_id=permission.permission_id
+                )
+
+                if exists:
+                    skipped_count += 1
+                    continue
+
+                await self.permission_repository.add_document_permission(
+                    document_id=document_id,
+                    user_id=user.user_id,
+                    permission_id=permission.permission_id
+                )
+
+                added_count += 1
+
+        await self.permission_repository.db.commit()
+
+        return {
+            "message": "Permissions added successfully.",
+            "added_count": added_count,
+            "skipped_count": skipped_count
+        }

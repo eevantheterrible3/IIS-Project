@@ -36,8 +36,10 @@ from models.activity import ActivityType
 from schemas.activity_schema import ActivityResponse
 from services.permission_service import PermissionService
 from repositories.permission_repository import PermissionRepository
-from schemas.document_permission_schema import DocumentUserPermissionResponse
-
+from schemas.document_permission_schema import (
+    DocumentUserPermissionResponse,
+    AddDocumentPermissionsRequest
+)
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -463,5 +465,23 @@ async def remove_document_permission(
         document_id=document_id,
         target_user_id=user_id,
         permission_name=permission_name,
+        current_user_id=current_user.user_id
+    )
+@router.post("/{document_id}/permissions")
+async def add_document_permissions(
+    document_id: str,
+    request: AddDocumentPermissionsRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = PermissionService(
+        document_repository=DocumentRepository(db),
+        permission_repository=PermissionRepository(db)
+    )
+
+    return await service.add_document_permissions(
+        document_id=document_id,
+        user_ids=request.user_ids,
+        permission_names=request.permissions,
         current_user_id=current_user.user_id
     )

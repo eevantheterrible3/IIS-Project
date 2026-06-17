@@ -7,7 +7,10 @@ from models.permission import Permission
 from models.work import Work
 from models.role import Role
 from models.allows import Allows
-
+from sqlalchemy import select, func
+from models.user import User
+from models.permission import Permission
+from models.allows import Allows
 
 class PermissionRepository:
     def __init__(self, db: AsyncSession):
@@ -94,3 +97,59 @@ class PermissionRepository:
         await self.db.flush()
 
         return True
+
+    async def get_users_by_ids(self, user_ids: list[str]):
+        result = await self.db.execute(
+            select(User).where(User.user_id.in_(user_ids))
+        )
+
+        return result.scalars().all()
+
+    async def get_permissions_by_names(self, permission_names: list[str]):
+        normalized_names = [
+            permission_name.lower().strip()
+            for permission_name in permission_names
+        ]
+
+        result = await self.db.execute(
+            select(Permission)
+            .where(func.lower(Permission.name).in_(normalized_names))
+        )
+
+        return result.scalars().all()
+
+
+    async def allow_permission_exists(
+        self,
+        document_id: str,
+        user_id: str,
+        permission_id: str
+    ) -> bool:
+        result = await self.db.execute(
+            select(Allows)
+            .where(
+                Allows.document_id == document_id,
+                Allows.user_id == user_id,
+                Allows.permission_id == permission_id
+            )
+        )
+
+        return result.scalar_one_or_none() is not None
+
+
+    async def add_document_permission(
+        self,
+        document_id: str,
+        user_id: str,
+        permission_id: str
+    ):
+        allowed_permission = Allows(
+            document_id=document_id,
+            user_id=user_id,
+            permission_id=permission_id
+        )
+
+        self.db.add(allowed_permission)
+        await self.db.flush()
+
+        return allowed_permission

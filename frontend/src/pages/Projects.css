@@ -360,3 +360,109 @@
 .permissions-table {
 	min-width: 900px;
 }
+.permissions-details-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.add-permission-button {
+	border: none;
+	border-radius: 6px;
+	background: #16a34a;
+	color: white;
+	padding: 8px 12px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+	.add-permission-button:hover {
+		background: #15803d;
+	}
+
+.permission-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
+
+.permission-modal {
+	background: white;
+	width: 520px;
+	max-width: 90%;
+	max-height: 80vh;
+	overflow-y: auto;
+	border-radius: 10px;
+	padding: 24px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+	.permission-modal h2 {
+		margin-top: 0;
+		color: #0b1f4d;
+	}
+
+.permission-modal-section {
+	margin-bottom: 20px;
+}
+
+	.permission-modal-section h3 {
+		margin-bottom: 10px;
+		color: #111827;
+		font-size: 16px;
+	}
+
+.permission-checkbox-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.permission-checkbox-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	color: #111827;
+}
+
+	.permission-checkbox-item small {
+		color: #6b7280;
+		margin-left: 4px;
+	}
+
+.permission-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 20px;
+}
+
+.cancel-permission-button,
+.confirm-permission-button {
+	border: none;
+	border-radius: 6px;
+	padding: 8px 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.cancel-permission-button {
+	background: #e5e7eb;
+	color: #111827;
+}
+
+.confirm-permission-button {
+	background: #16a34a;
+	color: white;
+}
+
+	.confirm-permission-button:hover {
+		background: #15803d;
+	}

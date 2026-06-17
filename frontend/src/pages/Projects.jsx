@@ -20,12 +20,21 @@ export default function Projects() {
     const [permissionsLoading, setPermissionsLoading] = useState(false);
     const [permissionsError, setPermissionsError] = useState(null);
 
+    const [showAddPermissionModal, setShowAddPermissionModal] = useState(false);
+    const [users, setUsers] = useState([]);
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
+    const [selectedPermissionNames, setSelectedPermissionNames] = useState([]);
+    const [addPermissionError, setAddPermissionError] = useState(null);
+    const [addPermissionLoading, setAddPermissionLoading] = useState(false);
+
     const navigate = useNavigate();
     const location = useLocation();
 
     const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
     const [showAddProjectModal, setShowAddProjectModal] = useState(false);
     const [showEditProjectModal, setShowEditProjectModal] = useState(false);
+
+    const availablePermissions = ["VIEW", "UPDATE", "DELETE", "CREATE"];
 
     useEffect(() => {
         const loggedUser = JSON.parse(localStorage.getItem("user"));
@@ -141,6 +150,99 @@ export default function Projects() {
 
         setDocumentPermissions(data);
         setPermissionsLoading(false);
+    }
+
+    async function loadUsers() {
+        const response = await authFetch("/users");
+
+        if (!response.ok) {
+            alert("Failed to load users.");
+            return;
+        }
+
+        const data = await response.json();
+        setUsers(data);
+    }
+
+    async function handleOpenAddPermissionModal() {
+        if (!selectedPermissionDocument) {
+            return;
+        }
+
+        setSelectedUserIds([]);
+        setSelectedPermissionNames([]);
+        setAddPermissionError(null);
+        setShowAddPermissionModal(true);
+
+        if (users.length === 0) {
+            await loadUsers();
+        }
+    }
+
+    function toggleSelectedUser(userId) {
+        setSelectedUserIds((prev) => {
+            if (prev.includes(userId)) {
+                return prev.filter((id) => id !== userId);
+            }
+
+            return [...prev, userId];
+        });
+    }
+
+    function toggleSelectedPermission(permissionName) {
+        setSelectedPermissionNames((prev) => {
+            if (prev.includes(permissionName)) {
+                return prev.filter((name) => name !== permissionName);
+            }
+
+            return [...prev, permissionName];
+        });
+    }
+
+    async function handleAddPermissions() {
+        if (!selectedPermissionDocument) {
+            return;
+        }
+
+        if (selectedUserIds.length === 0) {
+            setAddPermissionError("Select at least one user.");
+            return;
+        }
+
+        if (selectedPermissionNames.length === 0) {
+            setAddPermissionError("Select at least one permission.");
+            return;
+        }
+
+        setAddPermissionLoading(true);
+        setAddPermissionError(null);
+
+        const response = await authFetch(
+            `/documents/${selectedPermissionDocument.document_id}/permissions`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    user_ids: selectedUserIds,
+                    permissions: selectedPermissionNames,
+                }),
+            }
+        );
+
+        setAddPermissionLoading(false);
+
+        if (!response.ok) {
+            setAddPermissionError("Failed to add permissions.");
+            return;
+        }
+
+        setShowAddPermissionModal(false);
+        setSelectedUserIds([]);
+        setSelectedPermissionNames([]);
+
+        await loadPermissionsForDocument(selectedPermissionDocument);
     }
 
     async function handleRemovePermission(userId, permissionName) {
@@ -460,7 +562,16 @@ export default function Projects() {
                                         </div>
                                     ) : (
                                         <>
-                                            <h3>{selectedPermissionDocument.name}</h3>
+                                            <div className="permissions-details-header">
+                                                <h3>{selectedPermissionDocument.name}</h3>
+
+                                                <button
+                                                    className="add-permission-button"
+                                                    onClick={handleOpenAddPermissionModal}
+                                                >
+                                                    + Add permissions
+                                                </button>
+                                            </div>
 
                                             {permissionsLoading ? (
                                                 <div className="permissions-empty">
@@ -485,7 +596,7 @@ export default function Projects() {
                                                             <th>Create</th>
                                                             <th>Update</th>
                                                             <th>Delete</th>
-                                                            <th>Explicit permissions</th>
+                                                            <th>Assigned permissions</th>
                                                             <th>Actions</th>
                                                         </tr>
                                                     </thead>
@@ -522,7 +633,7 @@ export default function Projects() {
                                                                     <td>
                                                                         {removablePermissions.length === 0 ? (
                                                                             <span className="permission-no-action">
-                                                                                No explicit permissions
+                                                                                No assigned permissions
                                                                             </span>
                                                                         ) : (
                                                                             <div className="permission-remove-actions">
@@ -572,6 +683,89 @@ export default function Projects() {
                     )}
                 </main>
             </div>
+
+            {showAddPermissionModal && (
+                <div className="permission-modal-overlay">
+                    <div className="permission-modal">
+                        <h2>Add permissions</h2>
+
+                        <div className="permission-modal-section">
+                            <h3>Users</h3>
+
+                            {users.length === 0 ? (
+                                <div className="permissions-empty">
+                                    No users found.
+                                </div>
+                            ) : (
+                                <div className="permission-checkbox-list">
+                                    {users.map((user) => (
+                                        <label
+                                            key={user.user_id}
+                                            className="permission-checkbox-item"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedUserIds.includes(user.user_id)}
+                                                onChange={() => toggleSelectedUser(user.user_id)}
+                                            />
+
+                                            <span>
+                                                {user.name} {user.last_name}{" "}
+                                                <small>{user.email}</small>
+                                            </span>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="permission-modal-section">
+                            <h3>Permissions</h3>
+
+                            <div className="permission-checkbox-list">
+                                {availablePermissions.map((permissionName) => (
+                                    <label
+                                        key={permissionName}
+                                        className="permission-checkbox-item"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedPermissionNames.includes(permissionName)}
+                                            onChange={() => toggleSelectedPermission(permissionName)}
+                                        />
+
+                                        <span>{permissionName}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {addPermissionError && (
+                            <div className="permissions-error">
+                                {addPermissionError}
+                            </div>
+                        )}
+
+                        <div className="permission-modal-actions">
+                            <button
+                                className="cancel-permission-button"
+                                onClick={() => setShowAddPermissionModal(false)}
+                                disabled={addPermissionLoading}
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                className="confirm-permission-button"
+                                onClick={handleAddPermissions}
+                                disabled={addPermissionLoading}
+                            >
+                                {addPermissionLoading ? "Saving..." : "Save"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {showDeleteProjectModal && (
                 <div className="delete-modal-overlay">
