@@ -239,3 +239,230 @@
 .project-tabs-list .document-item:hover {
     color: #2563eb;
 }
+.project-permissions-view {
+	width: 100%;
+}
+
+.permissions-layout {
+	display: grid;
+	grid-template-columns: 280px 1fr;
+	gap: 24px;
+	margin-top: 24px;
+}
+
+.permissions-documents-panel,
+.permissions-details-panel {
+	background: white;
+	border: 1px solid #ddd;
+	border-radius: 10px;
+	padding: 20px;
+}
+
+	.permissions-documents-panel h3,
+	.permissions-details-panel h3 {
+		margin-top: 0;
+		color: #0b1f4d;
+	}
+
+.permission-document-item {
+	width: 100%;
+	border: none;
+	background: #f3f4f6;
+	color: #111827;
+	padding: 10px 12px;
+	border-radius: 8px;
+	text-align: left;
+	cursor: pointer;
+	margin-bottom: 8px;
+	font-weight: 500;
+}
+
+	.permission-document-item:hover {
+		background: #e5e7eb;
+	}
+
+	.permission-document-item.selected {
+		background: #dbeafe;
+		color: #1d4ed8;
+	}
+
+.permissions-empty {
+	color: #6b7280;
+	font-size: 14px;
+}
+
+.permissions-error {
+	color: #b91c1c;
+	font-size: 14px;
+}
+
+.permissions-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 16px;
+	font-size: 14px;
+}
+
+	.permissions-table th,
+	.permissions-table td {
+		border-bottom: 1px solid #e5e7eb;
+		padding: 10px;
+		text-align: left;
+	}
+
+	.permissions-table th {
+		color: #374151;
+		background: #f9fafb;
+		font-weight: 700;
+	}
+
+.permission-user-name {
+	font-weight: 600;
+	color: #111827;
+}
+
+.permission-user-email {
+	font-size: 12px;
+	color: #6b7280;
+	margin-top: 2px;
+}
+.permission-remove-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.permission-remove-button {
+	border: none;
+	border-radius: 6px;
+	background-color: #dc2626;
+	color: white;
+	padding: 6px 10px;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+	.permission-remove-button:hover {
+		background-color: #b91c1c;
+	}
+
+.permission-no-action {
+	color: #6b7280;
+	font-size: 12px;
+}
+
+.permissions-details-panel {
+	overflow-x: auto;
+}
+
+.permissions-table {
+	min-width: 900px;
+}
+.permissions-details-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.add-permission-button {
+	border: none;
+	border-radius: 6px;
+	background: #16a34a;
+	color: white;
+	padding: 8px 12px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+	.add-permission-button:hover {
+		background: #15803d;
+	}
+
+.permission-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
+
+.permission-modal {
+	background: white;
+	width: 520px;
+	max-width: 90%;
+	max-height: 80vh;
+	overflow-y: auto;
+	border-radius: 10px;
+	padding: 24px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+	.permission-modal h2 {
+		margin-top: 0;
+		color: #0b1f4d;
+	}
+
+.permission-modal-section {
+	margin-bottom: 20px;
+}
+
+	.permission-modal-section h3 {
+		margin-bottom: 10px;
+		color: #111827;
+		font-size: 16px;
+	}
+
+.permission-checkbox-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.permission-checkbox-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	color: #111827;
+}
+
+	.permission-checkbox-item small {
+		color: #6b7280;
+		margin-left: 4px;
+	}
+
+.permission-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 20px;
+}
+
+.cancel-permission-button,
+.confirm-permission-button {
+	border: none;
+	border-radius: 6px;
+	padding: 8px 14px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.cancel-permission-button {
+	background: #e5e7eb;
+	color: #111827;
+}
+
+.confirm-permission-button {
+	background: #16a34a;
+	color: white;
+}
+
+	.confirm-permission-button:hover {
+		background: #15803d;
+	}
