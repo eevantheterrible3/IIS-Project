@@ -12,6 +12,7 @@ class CreateResourceRequest(BaseModel):
 
 class UpdateResourceRequest(BaseModel):
     name: str | None = None
+    resource_type: str | None = None
     description: str | None = None
     status: ResourceStatus | None = None
     total_quantity: int | None = None

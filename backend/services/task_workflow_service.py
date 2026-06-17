@@ -120,7 +120,8 @@ class TaskWorkflowService:
             ],
         )
 
-    def _order_steps(self, steps):
+    @staticmethod
+    def _order_steps(steps):
         if not steps:
             return []
         step_map = {s.step_id: s for s in steps}

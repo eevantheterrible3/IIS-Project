@@ -25,6 +25,12 @@ class TaskResourceRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_resource(self, resource_id: str):
+        result = await self.db.execute(
+            select(TaskResource).where(TaskResource.resource_id == resource_id)
+        )
+        return result.scalars().all()
+
     async def get_by_resource_and_period(self, resource_id: str, reserved_from: datetime, reserved_until: datetime):
         result = await self.db.execute(
             select(TaskResource).where(

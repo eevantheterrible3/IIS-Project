@@ -37,6 +37,8 @@ class ResourceService:
             raise HTTPException(status_code=404, detail="Resource not found")
         if data.name is not None:
             resource.name = data.name
+        if data.resource_type is not None:
+            resource.resource_type = data.resource_type
         if data.description is not None:
             resource.description = data.description
         if data.status is not None:
@@ -50,5 +52,12 @@ class ResourceService:
         resource = await self.repository.get_by_id(resource_id)
         if resource is None:
             raise HTTPException(status_code=404, detail="Resource not found")
+        if self.task_resource_repository is not None:
+            in_use = await self.task_resource_repository.get_by_resource(resource_id)
+            if in_use:
+                raise HTTPException(
+                    status_code=400,
+                    detail="This resource is assigned to one or more tasks and cannot be deleted."
+                )
         await self.repository.delete(resource)
         return {"message": "Resource deleted"}

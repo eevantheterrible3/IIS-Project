@@ -88,8 +88,11 @@ class ProjectService:
             for w in project.works
         )
 
-    async def get_all_for_pr(self) -> list[ProjectWithManagerResponse]:
+    async def get_all_for_pr(self, current_user_id: str) -> list[ProjectWithManagerResponse]:
+        is_admin = await self.project_repository.is_user_admin(current_user_id)
         projects = await self.project_repository.get_all_with_members()
+        if not is_admin:
+            projects = [p for p in projects if any(w.user_id == current_user_id for w in p.works)]
         result = []
         for p in projects:
             manager = next(
@@ -111,6 +114,10 @@ class ProjectService:
         project = await self.project_repository.get_by_id_with_members(project_id)
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
+
+        is_member = any(w.user_id == current_user_id for w in project.works)
+        if not is_member and not await self.project_repository.is_user_admin(current_user_id):
+            raise HTTPException(status_code=403, detail="You don't have access to this project.")
 
         now = datetime.now()
         total = len(tasks)

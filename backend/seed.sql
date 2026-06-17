@@ -145,11 +145,11 @@ INSERT INTO subtask (subtask_id, task_id, name, deadline, current_status, assign
 (3, 2, 'Pregled dokumenata',    '2026-04-22', 'done',        2, '2026-04-20 09:00:00'),
 (4, 2, 'Skeniranje batch 1',    '2026-04-25', 'done',        2, '2026-04-20 09:00:00'),
 (5, 2, 'Skeniranje batch 2',    '2026-04-28', 'done',        2, '2026-04-20 09:00:00'),
-(6, 2, 'Skeniranje batch 3',    '2026-05-01', 'in_progress', 2, '2026-04-20 09:00:00'),
-(7, 2, 'Verifikacija kvaliteta','2026-05-02', 'created',     4, '2026-04-20 09:00:00'),
+(6, 2, 'Skeniranje batch 3',    '2026-05-01', 'todo',        2, '2026-04-20 09:00:00'),
+(7, 2, 'Verifikacija kvaliteta','2026-05-02', 'todo',        4, '2026-04-20 09:00:00'),
 -- Priprema izveštaja (task 4)
-(8, 4, 'Prikupiti statistike',  '2026-05-20', 'in_progress', 3, '2026-05-01 09:00:00'),
-(9, 4, 'Napisati izveštaj',     '2026-05-28', 'created',     3, '2026-05-01 09:00:00');
+(8, 4, 'Prikupiti statistike',  '2026-05-20', 'todo',        3, '2026-05-01 09:00:00'),
+(9, 4, 'Napisati izveštaj',     '2026-05-28', 'todo',        3, '2026-05-01 09:00:00');
 
 INSERT INTO task_resource (task_id, resource_id, quantity, reserved_from, reserved_until, status) VALUES
 (1, 1, 1, '2026-04-01', '2026-04-10', 'free'),
