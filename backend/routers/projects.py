@@ -1,14 +1,16 @@
 from typing import List
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from core.dependencies import get_current_user
 from database import get_db
 from models.user import User
+from models.work import Work
 from repositories.document_repository import DocumentRepository
 from repositories.project_repository import ProjectRepository
-from schemas.all_document_schema import DocumentListResponse
 from schemas.project_schema import ProjectCreateRequest, ProjectListResponse, ProjectUpdateRequest
 from services.document_service import DocumentService
 from services.project_service import ProjectService
@@ -25,14 +27,45 @@ async def get_my_projects(
     return await service.get_projects_for_user(current_user.user_id)
 
 
-@router.get("/{project_id}/documents", response_model=List[DocumentListResponse])
+@router.get("/{project_id}/documents")
 async def get_project_documents(
     project_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    service = DocumentService(DocumentRepository(db))
-    return await service.get_documents_for_project(project_id)
+    repo = DocumentRepository(db)
+    documents = await repo.get_documents_by_project_id(project_id)
+    return [
+        {
+            "document_id": doc.document_id,
+            "name": doc.name,
+            "status": doc.status,
+            "user_id": doc.user_id,
+        }
+        for doc in documents
+    ]
+
+
+@router.get("/{project_id}/members")
+async def get_project_members(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Work)
+        .where(Work.project_id == project_id)
+        .options(selectinload(Work.user), selectinload(Work.role))
+    )
+    works = result.scalars().all()
+    return [
+        {
+            "user_id": w.user.user_id,
+            "name": f"{w.user.name} {w.user.last_name}",
+            "role": w.role.name,
+        }
+        for w in works
+    ]
 
 
 @router.post("")

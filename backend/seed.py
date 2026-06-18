@@ -27,7 +27,6 @@ from models.workflow_instance import WorkflowInstance
 from models.workflow_instance_step import WorkflowInstanceStep
 from models.condition_type import ConditionType
 from models.condition import Condition
-from models.document_rating import DocumentRating
 from core.security import hash_password
 
 engine = create_async_engine(DATABASE_URL)
@@ -315,16 +314,6 @@ async def seed():
             WorkflowInstanceStep(instance_step_id=wis3_id, instance_id=wi_cv_review_id, action_id=wa_approve_id, status="pending",     progress=0,   assigned_user_id=None,         note=None),
             WorkflowInstanceStep(instance_step_id=wis4_id, instance_id=wi_contract_flow_id, action_id=wa_draft_id,   status="completed",   progress=100, assigned_user_id=user_mark_id,  note="Contract drafted"),
             WorkflowInstanceStep(instance_step_id=wis5_id, instance_id=wi_contract_flow_id, action_id=wa_approve_id, status="in_progress", progress=30,  assigned_user_id=user_sarah_id, note="Under admin review"),
-        ])
-
-        # Document Ratings
-        db.add_all([
-            DocumentRating(document_id=doc_cv_id,        user_id=user_anna_id,  score=4, comment="Well structured CV, minor formatting issues"),
-            DocumentRating(document_id=doc_cv_id,        user_id=user_peter_id, score=5, comment="Excellent candidate profile"),
-            DocumentRating(document_id=doc_contract_id,  user_id=user_sarah_id, score=3, comment="Needs clarification on termination clause"),
-            DocumentRating(document_id=doc_contract_id,  user_id=user_emma_id,  score=4, comment="Solid contract, well written"),
-            DocumentRating(document_id=doc_interview_id, user_id=user_emma_id,  score=5, comment="Great interview plan"),
-            DocumentRating(document_id=doc_invoice_id,   user_id=user_anna_id,  score=2, comment="Missing vendor details"),
         ])
 
         await db.commit()

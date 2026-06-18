@@ -1,11 +1,11 @@
-import json
-from typing import List
+import os
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from pydantic import BaseModel
 from fastapi.responses import FileResponse
 from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from sqlalchemy import select
 
 from core.dependencies import get_current_user
@@ -15,19 +15,18 @@ from models.user import User
 from models.workflow_instance import WorkflowInstance
 from models.workflow_instance_step import WorkflowInstanceStep
 from repositories.document_repository import DocumentRepository
-from repositories.document_section_repository import DocumentSectionRepository
 from repositories.document_version_repository import DocumentVersionRepository
-from repositories.section_template_repository import SectionTemplateRepository
-from repositories.workflow_has_action_repository import WorkflowHasActionRepository
 from schemas.all_document_schema import DocumentCreateRequest, DocumentListItemResponse
 from schemas.document_detail_schema import DocumentDetailResponse
-from schemas.document_section_schema import DocumentSectionResponse
 from schemas.document_update_schema import UpdateDocumentRequest
-from schemas.document_version_schema import DocumentSaveRequest, DocumentVersionResponse
-from services.document_section_service import DocumentSectionService
+from schemas.document_version_schema import DocumentVersionResponse
+from models.activity import Activity, ActivityType
 from services.document_service import DocumentService
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
+
+UPLOAD_DIR = Path("uploads/documents")
+ALLOWED_EXTENSIONS = {".docx", ".xlsx"}
 
 
 @router.get("/my", response_model=List[DocumentListItemResponse])
@@ -45,13 +44,11 @@ async def create_document(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    section_templates = await SectionTemplateRepository(db).get_by_document_type(request.document_type_id)
-    service = DocumentService(
-        DocumentRepository(db),
-        wha_repo=WorkflowHasActionRepository(db),
-        db=db,
-    )
-    doc = await service.create_document(request, current_user.user_id, section_templates)
+    service = DocumentService(DocumentRepository(db))
+    doc = await service.create_document(request, current_user.user_id)
+
+    db.add(Activity(document_id=doc.document_id, user_id=current_user.user_id, type=ActivityType.CREATE))
+    await db.commit()
 
     return DocumentListItemResponse(
         document_id=doc.document_id,
@@ -59,6 +56,7 @@ async def create_document(
         user_prompt=doc.user_prompt,
         document_type_id=doc.document_type_id,
         document_type_name=None,
+        file_type=doc.file_type,
         status=doc.status,
         created_at=doc.created_at,
         updated_at=doc.updated_at,
@@ -72,26 +70,12 @@ async def get_document_details(
     db: AsyncSession = Depends(get_db),
 ):
     service = DocumentService(DocumentRepository(db))
-    return await service.get_document_details(document_id)
+    result = await service.get_document_details(document_id)
 
+    db.add(Activity(document_id=document_id, user_id=current_user.user_id, type=ActivityType.VIEW))
+    await db.commit()
 
-@router.get("/{document_id}/file")
-async def get_document_file(
-    document_id: str,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    document_repository = DocumentRepository(db)
-    document = await document_repository.get_document_details(document_id)
-
-    if document is None or document.file_path is None:
-        raise HTTPException(status_code=404, detail="Document file not found")
-
-    file_path = Path(document.file_path)
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File does not exist")
-
-    return FileResponse(path=file_path, media_type="application/pdf", headers={"Content-Disposition": "inline"})
+    return result
 
 
 @router.delete("/delete/{document_id}")
@@ -100,6 +84,8 @@ async def delete_document(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    db.add(Activity(document_id=document_id, user_id=current_user.user_id, type=ActivityType.DELETE))
+    await db.flush()
     service = DocumentService(DocumentRepository(db))
     return await service.delete_document(document_id)
 
@@ -115,39 +101,37 @@ async def update_document(
     return await service.update_document_tags_and_metadata(document_id, request)
 
 
-@router.get("/{document_id}/sections", response_model=List[DocumentSectionResponse])
-async def get_document_sections(
+@router.post("/{document_id}/upload")
+async def upload_version(
     document_id: str,
+    file: UploadFile = File(...),
+    note: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    service = DocumentSectionService(DocumentSectionRepository(db))
-    return await service.get_by_document(document_id)
+    ext = Path(file.filename).suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}")
 
+    doc_repo = DocumentRepository(db)
+    document = await doc_repo.get_document_by_id(document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
 
-@router.post("/{document_id}/save")
-async def save_document(
-    document_id: str,
-    request: DocumentSaveRequest,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    section_repo = DocumentSectionRepository(db)
-    for item in request.sections:
-        section = await section_repo.get_by_id(item.document_section_id)
-        if section:
-            section.content = item.content
-            await section_repo.update(section)
+    if document.file_type and ext != f".{document.file_type}":
+        raise HTTPException(status_code=400, detail=f"Document expects .{document.file_type} files")
 
-    all_sections = await section_repo.get_by_document(document_id)
-    snapshot = json.dumps([
-        {
-            "section_name": s.section_template.name if s.section_template else f"Section {i + 1}",
-            "content": s.content or "",
-            "order_index": s.order_index,
-        }
-        for i, s in enumerate(all_sections)
-    ])
+    version_repo = DocumentVersionRepository(db)
+    latest = await version_repo.get_latest_number(document_id)
+    version_number = latest + 1
+
+    doc_dir = UPLOAD_DIR / document_id
+    doc_dir.mkdir(parents=True, exist_ok=True)
+    stored_name = f"v{version_number}_{file.filename}"
+    file_path = doc_dir / stored_name
+
+    content = await file.read()
+    file_path.write_bytes(content)
 
     current_step_id = None
     instance_result = await db.execute(
@@ -169,18 +153,21 @@ async def save_document(
         if active_step:
             current_step_id = active_step.instance_step_id
 
-    version_repo = DocumentVersionRepository(db)
-    latest = await version_repo.get_latest_number(document_id)
     version = DocumentVersion(
         document_id=document_id,
         author_id=current_user.user_id,
         instance_step_id=current_step_id,
-        version_number=latest + 1,
-        full_content=snapshot,
-        note=request.note,
+        version_number=version_number,
+        file_path=str(file_path),
+        file_name=file.filename,
+        note=note,
     )
     created = await version_repo.create(version)
-    return {"version_number": created.version_number}
+
+    db.add(Activity(document_id=document_id, user_id=current_user.user_id, type=ActivityType.UPDATE))
+    await db.commit()
+
+    return {"version_number": created.version_number, "file_name": created.file_name}
 
 
 @router.get("/{document_id}/versions", response_model=List[DocumentVersionResponse])
@@ -195,8 +182,8 @@ async def get_document_versions(
         DocumentVersionResponse(
             document_version_id=v.document_version_id,
             version_number=v.version_number,
+            file_name=v.file_name,
             note=v.note,
-            full_content=v.full_content,
             created_at=v.created_at,
             author_name=f"{v.author.name} {v.author.last_name}" if v.author else None,
             instance_step_id=v.instance_step_id,
@@ -204,3 +191,64 @@ async def get_document_versions(
         )
         for v in versions
     ]
+
+
+@router.get("/{document_id}/versions/{version_id}/download")
+async def download_version(
+    document_id: str,
+    version_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = DocumentVersionRepository(db)
+    version = await repo.get_by_id(version_id)
+    if not version or version.document_id != document_id:
+        raise HTTPException(status_code=404, detail="Version not found")
+    if not version.file_path:
+        raise HTTPException(status_code=404, detail="No file for this version")
+
+    path = Path(version.file_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    return FileResponse(path=path, filename=version.file_name or path.name)
+
+
+class StatusUpdateRequest(BaseModel):
+    status: str
+
+
+class AssignRequest(BaseModel):
+    user_id: str
+
+
+@router.put("/{document_id}/status")
+async def update_document_status(
+    document_id: str,
+    request: StatusUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = DocumentRepository(db)
+    document = await repo.get_document_by_id(document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    document.status = request.status
+    await db.commit()
+    return {"message": "Status updated", "status": request.status}
+
+
+@router.put("/{document_id}/assign")
+async def assign_document(
+    document_id: str,
+    request: AssignRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    repo = DocumentRepository(db)
+    document = await repo.get_document_by_id(document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    document.user_id = request.user_id
+    await db.commit()
+    return {"message": "Document assigned"}

@@ -15,6 +15,7 @@ class DocumentDetailResponse(BaseModel):
     document_id: str
     name: str
     user_prompt: str | None = None
+    file_type: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

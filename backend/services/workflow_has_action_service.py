@@ -23,6 +23,13 @@ class WorkflowHasActionService:
         return self._to_response(link)
 
     async def create(self, request: WorkflowHasActionCreateRequest) -> WorkflowHasActionResponse:
+        if request.is_start_step:
+            links = await self.get_by_workflow(request.workflow_id)
+            for link in links:
+                if link.is_start_step:
+                    raise HTTPException(status_code=404, detail="Workflow already has a start step")
+
+
         link = WorkflowHasAction(
             workflow_id=request.workflow_id,
             action_id=request.action_id,
@@ -31,6 +38,7 @@ class WorkflowHasActionService:
             condition_id=request.condition_id,
         )
         created = await self.repository.create(link)
+        await self._recompute_order(request.workflow_id)
         result = await self.repository.get_by_id(created.workflow_id, created.action_id)
         return self._to_response(result)
 
@@ -46,8 +54,10 @@ class WorkflowHasActionService:
             link.is_start_step = request.is_start_step
         if request.condition_id != UNSET:
             link.condition_id = request.condition_id
-        updated = await self.repository.update(link)
-        return self._to_response(updated)
+        await self.repository.update(link)
+        await self._recompute_order(workflow_id)
+        result = await self.repository.get_by_id(workflow_id, action_id)
+        return self._to_response(result)
 
     async def delete(self, workflow_id: str, action_id: str):
         link = await self.repository.get_by_id(workflow_id, action_id)
@@ -57,7 +67,26 @@ class WorkflowHasActionService:
         for pred in predecessors:
             pred.next_action = None
         await self.repository.delete(link)
+        await self._recompute_order(workflow_id)
         return {"message": "Workflow-action link deleted successfully"}
+
+    async def _recompute_order(self, workflow_id: str):
+        steps = await self.repository.get_by_workflow(workflow_id)
+        by_action = {s.action_id: s for s in steps}
+        start = next((s for s in steps if s.is_start_step), None)
+        order = {}
+        current, i = start, 0
+        while current and current.action_id not in order:
+            order[current.action_id] = i
+            i += 1
+            current = by_action.get(current.next_action) if current.next_action else None
+        for s in steps:
+            if s.action_id not in order:
+                order[s.action_id] = i
+                i += 1
+        for s in steps:
+            s.step_order = order[s.action_id]
+        await self.repository.update(steps[0]) if steps else None
 
     def _to_response(self, link: WorkflowHasAction) -> WorkflowHasActionResponse:
         return WorkflowHasActionResponse(
@@ -68,4 +97,5 @@ class WorkflowHasActionService:
             next_action_name=link.next_action_ref.name if link.next_action_ref else None,
             is_start_step=link.is_start_step,
             condition_id=link.condition_id,
+            step_order=link.step_order,
         )

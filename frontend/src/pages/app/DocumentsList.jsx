@@ -34,7 +34,7 @@ export default function DocumentsList() {
     const [projects, setProjects] = useState([]);
     const [search, setSearch] = useState("");
     const [showCreate, setShowCreate] = useState(false);
-    const [createForm, setCreateForm] = useState({ name: "", document_type_id: "", project_id: "", user_prompt: "" });
+    const [createForm, setCreateForm] = useState({ name: "", document_type_id: "", project_id: "", file_type: "", user_prompt: "" });
     const [deleteTarget, setDeleteTarget] = useState(null);
 
     useEffect(() => {
@@ -49,7 +49,7 @@ export default function DocumentsList() {
     }
 
     async function handleCreate() {
-        if (!createForm.name || !createForm.document_type_id || !createForm.project_id) return;
+        if (!createForm.name || !createForm.document_type_id || !createForm.project_id || !createForm.file_type) return;
         const res = await authFetch("/documents", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -57,12 +57,13 @@ export default function DocumentsList() {
                 name: createForm.name,
                 document_type_id: createForm.document_type_id,
                 project_id: createForm.project_id,
+                file_type: createForm.file_type,
                 user_prompt: createForm.user_prompt || null,
             }),
         });
         if (!res.ok) { alert("Failed to create document."); return; }
         setShowCreate(false);
-        setCreateForm({ name: "", document_type_id: "", project_id: "", user_prompt: "" });
+        setCreateForm({ name: "", document_type_id: "", project_id: "", file_type: "", user_prompt: "" });
         fetchDocuments();
     }
 
@@ -201,6 +202,16 @@ export default function DocumentsList() {
                                     {projects.map(p => (
                                         <SelectItem key={p.project_id} value={String(p.project_id)}>{p.project_name}</SelectItem>
                                     ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>File type</Label>
+                            <Select value={createForm.file_type} onValueChange={v => setCreateForm(f => ({ ...f, file_type: v }))}>
+                                <SelectTrigger><SelectValue placeholder="Select file type..." /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="docx">DOCX</SelectItem>
+                                    <SelectItem value="xlsx">XLSX</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

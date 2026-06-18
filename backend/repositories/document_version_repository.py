@@ -22,6 +22,13 @@ class DocumentVersionRepository:
         )
         return result.scalars().all()
 
+    async def get_by_id(self, version_id: str):
+        result = await self.db.execute(
+            select(DocumentVersion)
+            .where(DocumentVersion.document_version_id == version_id)
+        )
+        return result.scalar_one_or_none()
+
     async def get_latest_number(self, document_id: str) -> int:
         result = await self.db.execute(
             select(func.max(DocumentVersion.version_number))

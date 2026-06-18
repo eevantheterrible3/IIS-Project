@@ -1,22 +1,28 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { FileText, Sparkles, Layers, LayoutTemplate, Zap, Plus, Cog, GitBranch, Play, Filter, GitMerge, Star } from "lucide-react";
+import {
+    FileText, Layers, LayoutTemplate, Zap, Plus,
+    Cog, GitBranch, Play, Filter, GitMerge, ClipboardList, Activity,
+} from "lucide-react";
 
-const navItems = [
-    { to: "/app/documents", icon: FileText, label: "Documents" },
-    { to: "/app/new-document", icon: Sparkles, label: "New Document" },
-    { to: "/app/document-types", icon: Layers, label: "Document Types" },
-    { to: "/app/section-templates", icon: LayoutTemplate, label: "Section Templates" },
-    { to: "/app/document-ratings", icon: Star, label: "Ratings" },
-    { to: "/app/system-prompts", icon: Zap, label: "System Prompts" },
-    { to: "/app/workflow-actions", icon: Cog, label: "Workflow Actions" },
-    { to: "/app/workflows", icon: GitBranch, label: "Workflows" },
-    { to: "/app/workflow-instances", icon: Play, label: "Instances" },
-    { to: "/app/condition-types", icon: Filter, label: "Condition Types" },
-    { to: "/app/conditions", icon: GitMerge, label: "Conditions" },
+const allNavItems = [
+    { to: "/app/documents", icon: FileText, label: "Documents", roles: ["ADMIN", "PROJECT_MANAGER", "TEAM_MEMBER"] },
+    { to: "/app/project-documents", icon: ClipboardList, label: "Project Docs", roles: ["PROJECT_MANAGER"] },
+    { to: "/app/document-types", icon: Layers, label: "Document Types", roles: ["ADMIN"] },
+    { to: "/app/section-templates", icon: LayoutTemplate, label: "Section Templates", roles: ["ADMIN"] },
+    { to: "/app/system-prompts", icon: Zap, label: "System Prompts", roles: ["ADMIN"] },
+    { to: "/app/workflow-actions", icon: Cog, label: "Workflow Actions", roles: ["ADMIN"] },
+    { to: "/app/workflows", icon: GitBranch, label: "Workflows", roles: ["ADMIN"] },
+    { to: "/app/workflow-instances", icon: Play, label: "Instances", roles: ["ADMIN", "PROJECT_MANAGER", "TEAM_MEMBER"] },
+    { to: "/app/condition-types", icon: Filter, label: "Condition Types", roles: ["ADMIN"] },
+    { to: "/app/conditions", icon: GitMerge, label: "Conditions", roles: ["ADMIN"] },
+    { to: "/app/activity-log", icon: Activity, label: "Activity Log", roles: ["ADMIN", "PROJECT_MANAGER"] },
 ];
 
 export default function Sidebar() {
     const navigate = useNavigate();
+    const selectedProject = JSON.parse(localStorage.getItem("selectedProject") || "{}");
+    const role = selectedProject.role_name || "TEAM_MEMBER";
+    const navItems = allNavItems.filter(item => item.roles.includes(role));
 
     return (
         <aside className="w-56 flex flex-col bg-slate-900 shrink-0">
@@ -52,7 +58,6 @@ export default function Sidebar() {
                     </NavLink>
                 ))}
             </nav>
-
         </aside>
     );
 }

@@ -16,6 +16,7 @@ class Document(Base):
     name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=True)
     user_prompt = Column(Text)
+    file_type = Column(String(10), nullable=True)
     status = Column(String(50), nullable=False, default="draft")
 
     created_at = Column(DateTime, server_default=func.now())
@@ -31,4 +32,4 @@ class Document(Base):
     allowed_users = relationship("Allows", back_populates="document", cascade="all, delete-orphan")
     sections = relationship("DocumentSection", back_populates="document", cascade="all, delete-orphan")
     versions = relationship("DocumentVersion", back_populates="document", cascade="all, delete-orphan")
-    ratings = relationship("DocumentRating", back_populates="document", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="document", cascade="all, delete-orphan")

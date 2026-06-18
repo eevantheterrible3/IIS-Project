@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Save, Clock, Eye } from "lucide-react";
+import { ChevronLeft, Upload, Download, Clock, MessageSquare, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -20,18 +20,18 @@ const statusColors = {
 export default function DocumentView() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const fileInputRef = useRef(null);
 
     const [document, setDocument] = useState(null);
-    const [sections, setSections] = useState([]);
     const [versions, setVersions] = useState([]);
-    const [selectedVersion, setSelectedVersion] = useState(null);
-    const [saving, setSaving] = useState(false);
-    const [savedMsg, setSavedMsg] = useState(false);
+    const [comments, setComments] = useState([]);
+    const [newComment, setNewComment] = useState("");
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         authFetch(`/documents/${id}`).then(r => r.json()).then(setDocument);
-        authFetch(`/documents/${id}/sections`).then(r => r.json()).then(setSections);
         fetchVersions();
+        fetchComments();
     }, [id]);
 
     async function fetchVersions() {
@@ -39,36 +39,73 @@ export default function DocumentView() {
         setVersions(Array.isArray(data) ? data : []);
     }
 
-    async function handleSave() {
-        setSaving(true);
-        const res = await authFetch(`/documents/${id}/save`, {
+    async function fetchComments() {
+        const data = await authFetch(`/comments/document/${id}`).then(r => r.json());
+        setComments(Array.isArray(data) ? data : []);
+    }
+
+    async function handleAddComment() {
+        if (!newComment.trim()) return;
+        const res = await authFetch("/comments", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                sections: sections.map(s => ({
-                    document_section_id: s.document_section_id,
-                    content: s.content ?? null,
-                })),
+                document_id: id,
+                content: newComment,
             }),
         });
-        setSaving(false);
         if (res.ok) {
-            setSavedMsg(true);
-            setTimeout(() => setSavedMsg(false), 2000);
+            setNewComment("");
+            fetchComments();
+        }
+    }
+
+    async function handleUpload(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const ext = file.name.split(".").pop().toLowerCase();
+        if (!["docx", "xlsx"].includes(ext)) {
+            alert("Only .docx and .xlsx files are allowed.");
+            return;
+        }
+
+        setUploading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(`http://localhost:8000/documents/${id}/upload`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+        });
+        setUploading(false);
+        fileInputRef.current.value = "";
+
+        if (res.ok) {
             fetchVersions();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            alert(err.detail || "Upload failed");
         }
     }
 
-    function updateSectionContent(sectionId, content) {
-        setSections(prev => prev.map(s => s.document_section_id === sectionId ? { ...s, content } : s));
-    }
+    async function handleDownload(version) {
+        const token = localStorage.getItem("access_token");
+        const res = await fetch(
+            `http://localhost:8000/documents/${id}/versions/${version.document_version_id}/download`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!res.ok) return alert("Download failed");
 
-    function getVersionSections(version) {
-        try {
-            return JSON.parse(version.full_content || "[]");
-        } catch {
-            return [];
-        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = window.document.createElement("a");
+        a.href = url;
+        a.download = version.file_name || `v${version.version_number}`;
+        a.click();
+        URL.revokeObjectURL(url);
     }
 
     if (!document) {
@@ -103,120 +140,119 @@ export default function DocumentView() {
                 </div>
             </div>
 
-            <Tabs defaultValue="preview">
+            <Tabs defaultValue="upload">
                 <TabsList className="bg-slate-100 p-1 rounded-lg mb-6">
-                    <TabsTrigger value="preview" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                        <Eye size={13} /> Preview
+                    <TabsTrigger value="upload" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
+                        <Upload size={13} /> Upload
                     </TabsTrigger>
                     <TabsTrigger value="versions" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
-                        <Clock size={13} /> Version History
+                        <Clock size={13} /> Versions
                         {versions.length > 0 && (
                             <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-slate-200 text-slate-600">{versions.length}</span>
                         )}
                     </TabsTrigger>
+                    <TabsTrigger value="comments" className="flex items-center gap-1.5 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md">
+                        <MessageSquare size={13} /> Comments
+                        {comments.length > 0 && (
+                            <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-slate-200 text-slate-600">{comments.length}</span>
+                        )}
+                    </TabsTrigger>
                 </TabsList>
 
-                {/* Preview tab */}
-                <TabsContent value="preview">
-                    <div className="flex justify-end mb-4">
+                {/* Upload tab */}
+                <TabsContent value="upload">
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".docx,.xlsx"
+                            className="hidden"
+                            onChange={handleUpload}
+                        />
+                        <FileText size={40} className="mx-auto mb-4 text-slate-300" />
+                        <p className="text-slate-700 font-medium mb-1">Upload a new version</p>
+                        <p className="text-slate-400 text-sm mb-6">Supported formats: .docx, .xlsx</p>
                         <Button
                             className="bg-indigo-600 hover:bg-indigo-500 gap-1.5"
-                            disabled={saving}
-                            onClick={handleSave}
+                            disabled={uploading}
+                            onClick={() => fileInputRef.current?.click()}
                         >
-                            <Save size={13} />
-                            {saving ? "Saving..." : savedMsg ? "Saved!" : "Save Document"}
+                            <Upload size={13} />
+                            {uploading ? "Uploading..." : "Choose File"}
                         </Button>
                     </div>
+                </TabsContent>
 
-                    {sections.length === 0 ? (
+                {/* Versions tab */}
+                <TabsContent value="versions">
+                    {versions.length === 0 ? (
                         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-                            <p className="text-slate-500 font-medium">No sections</p>
-                            <p className="text-slate-400 text-sm mt-1">This document has no sections yet.</p>
+                            <Clock size={32} className="mx-auto mb-3 text-slate-300" />
+                            <p className="text-slate-500 font-medium">No versions yet</p>
+                            <p className="text-slate-400 text-sm mt-1">Upload a file to create the first version.</p>
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {sections.map((section, i) => (
-                                <div key={section.document_section_id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
-                                        <h3 className="text-sm font-semibold text-slate-700">
-                                            {section.section_name || `Section ${i + 1}`}
-                                        </h3>
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100">
+                            {versions.map(v => (
+                                <div key={v.document_version_id} className="flex items-center justify-between px-5 py-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center">
+                                            <FileText size={18} className="text-indigo-500" />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-semibold text-slate-800">
+                                                v{v.version_number}
+                                                {v.file_name && <span className="ml-2 font-normal text-slate-500">{v.file_name}</span>}
+                                            </div>
+                                            <div className="text-xs text-slate-400 mt-0.5">
+                                                {formatDate(v.created_at)}
+                                                {v.author_name && <> · {v.author_name}</>}
+                                                {v.step_name && <> · {v.step_name}</>}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="p-4">
-                                        <Textarea
-                                            value={section.content || ""}
-                                            onChange={e => updateSectionContent(section.document_section_id, e.target.value)}
-                                            placeholder="Write section content..."
-                                            rows={6}
-                                            className="text-sm resize-none border-0 p-0 shadow-none focus-visible:ring-0 bg-transparent"
-                                        />
-                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-1.5"
+                                        onClick={() => handleDownload(v)}
+                                    >
+                                        <Download size={13} /> Download
+                                    </Button>
                                 </div>
                             ))}
                         </div>
                     )}
                 </TabsContent>
 
-                {/* Version History tab */}
-                <TabsContent value="versions">
-                    {versions.length === 0 ? (
-                        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-                            <Clock size={32} className="mx-auto mb-3 text-slate-300" />
-                            <p className="text-slate-500 font-medium">No versions saved</p>
-                            <p className="text-slate-400 text-sm mt-1">Save the document to create a version.</p>
+                {/* Comments tab */}
+                <TabsContent value="comments">
+                    <div className="space-y-4">
+                        <div className="flex gap-2">
+                            <Textarea
+                                value={newComment}
+                                onChange={e => setNewComment(e.target.value)}
+                                placeholder="Add a comment..."
+                                rows={2}
+                                className="flex-1"
+                            />
+                            <Button onClick={handleAddComment} className="bg-indigo-600 hover:bg-indigo-500 text-white self-end">
+                                Post
+                            </Button>
                         </div>
-                    ) : (
-                        <div className="flex gap-4 h-[600px]">
-                            {/* Left: version list */}
-                            <div className="w-56 shrink-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-y-auto">
-                                {versions.map(v => (
-                                    <button
-                                        key={v.document_version_id}
-                                        onClick={() => setSelectedVersion(v)}
-                                        className={`w-full text-left px-4 py-3 border-b border-slate-100 last:border-0 transition-colors ${
-                                            selectedVersion?.document_version_id === v.document_version_id
-                                                ? "bg-indigo-50 border-l-2 border-l-indigo-500"
-                                                : "hover:bg-slate-50"
-                                        }`}
-                                    >
-                                        <div className="text-sm font-semibold text-slate-800">v{v.version_number}</div>
-                                        <div className="text-xs text-slate-400 mt-0.5">{formatDate(v.created_at)}</div>
-                                        {v.author_name && <div className="text-xs text-slate-400">{v.author_name}</div>}
-                                    </button>
-                                ))}
+                        {comments.length === 0 && (
+                            <p className="text-sm text-slate-400 text-center py-8">No comments yet</p>
+                        )}
+                        {comments.map(c => (
+                            <div key={c.comment_id} className="bg-white border border-slate-200 rounded-lg p-4">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-sm font-semibold text-slate-700">{c.user_name}</span>
+                                    <span className="text-xs text-slate-400">{c.created_at ? new Date(c.created_at).toLocaleString() : ""}</span>
+                                </div>
+                                <p className="text-sm text-slate-600 mt-1">{c.content}</p>
                             </div>
-
-                            {/* Right: version content */}
-                            <div className="flex-1 overflow-y-auto">
-                                {!selectedVersion ? (
-                                    <div className="bg-white rounded-xl border border-slate-200 h-full flex items-center justify-center">
-                                        <p className="text-slate-400 text-sm">Select a version to view</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="text-sm font-semibold text-slate-700">Version {selectedVersion.version_number}</span>
-                                            <span className="text-xs text-slate-400">{formatDate(selectedVersion.created_at)}</span>
-                                            {selectedVersion.author_name && <span className="text-xs text-slate-400">· {selectedVersion.author_name}</span>}
-                                        </div>
-                                        {getVersionSections(selectedVersion).map((section, i) => (
-                                            <div key={i} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                                <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
-                                                    <h3 className="text-sm font-semibold text-slate-700">
-                                                        {section.section_name || `Section ${i + 1}`}
-                                                    </h3>
-                                                </div>
-                                                <div className="p-5 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                                                    {section.content || <span className="text-slate-300 italic">Empty</span>}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                        ))}
+                    </div>
                 </TabsContent>
             </Tabs>
         </div>

@@ -9,11 +9,8 @@ from schemas.document_detail_schema import (
 
 
 class DocumentService:
-    def __init__(self, document_repository, workflow_repo=None, wha_repo=None, db=None):
+    def __init__(self, document_repository):
         self.document_repository = document_repository
-        self.workflow_repo = workflow_repo
-        self.wha_repo = wha_repo
-        self.db = db
 
     async def get_documents_for_user(self, user_id: int) -> list[DocumentListItemResponse]:
         documents = await self.document_repository.get_by_user_id(user_id)
@@ -24,6 +21,7 @@ class DocumentService:
                 user_prompt=doc.user_prompt,
                 document_type_id=doc.document_type_id,
                 document_type_name=doc.document_type.name if doc.document_type else None,
+                file_type=doc.file_type,
                 status=doc.status,
                 created_at=doc.created_at,
                 updated_at=doc.updated_at,
@@ -31,56 +29,19 @@ class DocumentService:
             for doc in documents
         ]
 
-    async def create_document(self, request: DocumentCreateRequest, user_id: str, section_templates: list):
+    async def create_document(self, request: DocumentCreateRequest, user_id: str):
         from models.document import Document
-        from models.workflow import Workflow
-        from models.workflow_instance import WorkflowInstance
-        from models.workflow_instance_step import WorkflowInstanceStep
-        from sqlalchemy import select
 
         document = Document(
             name=request.name,
             user_id=user_id,
             project_id=request.project_id,
             document_type_id=request.document_type_id,
+            file_type=request.file_type,
             user_prompt=request.user_prompt,
             status="draft",
         )
-        doc = await self.document_repository.create_document(document, section_templates)
-
-        if request.document_type_id and self.wha_repo and self.db:
-            result = await self.db.execute(
-                select(Workflow)
-                .where(Workflow.document_type_id == request.document_type_id)
-                .limit(1)
-            )
-            workflow = result.scalar_one_or_none()
-            if workflow:
-                wha_steps = await self.wha_repo.get_by_workflow(workflow.workflow_id)
-                start_step = next((s for s in wha_steps if s.is_start_step), None)
-
-                instance = WorkflowInstance(
-                    workflow_id=workflow.workflow_id,
-                    document_id=doc.document_id,
-                    current_step_id=start_step.action_id if start_step else None,
-                    designated_user_id=user_id,
-                )
-                self.db.add(instance)
-                await self.db.flush()
-
-                for wha in wha_steps:
-                    is_start = start_step and wha.action_id == start_step.action_id
-                    instance_step = WorkflowInstanceStep(
-                        instance_id=instance.instance_id,
-                        action_id=wha.action_id,
-                        status="in_progress" if is_start else "pending",
-                        progress=0,
-                    )
-                    self.db.add(instance_step)
-
-                await self.db.commit()
-
-        return doc
+        return await self.document_repository.create_document(document)
 
     async def get_documents_for_project(self, project_id: int) -> list[DocumentListResponse]:
         documents = await self.document_repository.get_documents_by_project_id(project_id)
@@ -104,6 +65,7 @@ class DocumentService:
             name=document.name,
             status=document.status,
             user_prompt=document.user_prompt,
+            file_type=document.file_type,
             created_at=document.created_at,
             updated_at=document.updated_at,
             author=f"{document.user.name} {document.user.last_name}",

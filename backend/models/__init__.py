@@ -13,7 +13,6 @@ from .document_type import DocumentType
 from .section_template import SectionTemplate
 from .document_section import DocumentSection
 from .document_version import DocumentVersion
-from .document_rating import DocumentRating
 from .workflow import Workflow
 from .workflow_action import WorkflowAction
 from .workflow_has_action import WorkflowHasAction
@@ -21,3 +20,4 @@ from .workflow_instance import WorkflowInstance
 from .condition_type import ConditionType
 from .condition import Condition
 from .workflow_instance_step import WorkflowInstanceStep
+from .comment import Comment

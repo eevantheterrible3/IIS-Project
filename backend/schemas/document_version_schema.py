@@ -3,21 +3,11 @@ from datetime import datetime
 from typing import Optional
 
 
-class SectionSaveItem(BaseModel):
-    document_section_id: str
-    content: Optional[str] = None
-
-
-class DocumentSaveRequest(BaseModel):
-    sections: list[SectionSaveItem]
-    note: Optional[str] = None
-
-
 class DocumentVersionResponse(BaseModel):
     document_version_id: str
     version_number: int
+    file_name: str | None = None
     note: str | None = None
-    full_content: str | None = None
     created_at: datetime | None = None
     author_name: str | None = None
     instance_step_id: str | None = None

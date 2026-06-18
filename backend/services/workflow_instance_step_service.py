@@ -1,7 +1,6 @@
-import json
-
 from fastapi import HTTPException
-from models.document_version import DocumentVersion
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from models.workflow_instance_step import WorkflowInstanceStep
 from schemas.workflow_instance_step_schema import (
     WorkflowInstanceStepCreateRequest,
@@ -11,12 +10,11 @@ from schemas.workflow_instance_step_schema import (
 
 
 class WorkflowInstanceStepService:
-    def __init__(self, repository, instance_repository=None, section_repository=None, version_repository=None, workflow_has_action_repository=None):
+    def __init__(self, repository, instance_repository=None, workflow_has_action_repository=None, db=None):
         self.repository = repository
         self.instance_repository = instance_repository
-        self.section_repository = section_repository
-        self.version_repository = version_repository
         self.workflow_has_action_repository = workflow_has_action_repository
+        self.db = db
 
     async def get_by_instance(self, instance_id: str) -> list[WorkflowInstanceStepResponse]:
         steps = await self.repository.get_by_instance(instance_id)
@@ -33,7 +31,7 @@ class WorkflowInstanceStepService:
             instance_id=request.instance_id,
             action_id=request.action_id,
             status=request.status,
-            progress=request.progress,
+            progress=100 if request.status == "completed" else request.progress,
             assigned_user_id=request.assigned_user_id,
             note=request.note,
         )
@@ -45,7 +43,11 @@ class WorkflowInstanceStepService:
         step = await self.repository.get_by_id(instance_step_id)
         if step is None:
             raise HTTPException(status_code=404, detail="Workflow instance step not found")
+        if (self.instance.current_step == self.action):
+            raise HTTPException(status_code=404, detail="You can only update the progress in current step.")
         old_status = step.status
+        if request.status == "completed" and old_status != "completed":
+            await self._check_role_condition(step, author_id)
         if request.status is not None:
             step.status = request.status
         if request.progress is not None:
@@ -58,16 +60,63 @@ class WorkflowInstanceStepService:
             step.started_at = request.started_at
         if request.completed_at is not None:
             step.completed_at = request.completed_at
-        if request.status == "completed" and old_status != "completed":
+        if step.status == "completed":
             step.progress = 100
 
         updated = await self.repository.update(step)
 
         if request.status == "completed" and old_status != "completed":
-            next_step = await self._advance_next_step(updated)
-            await self._create_version_snapshot(updated, author_id, next_step)
+            await self._advance_next_step(updated)
 
-        return self._to_response(updated)
+        result = await self.repository.get_by_id(instance_step_id)
+        return self._to_response(result)
+
+    async def _check_role_condition(self, step: WorkflowInstanceStep, user_id: str | None):
+        if not self.instance_repository or not self.workflow_has_action_repository or not self.db or not user_id:
+            return
+
+        instance = await self.instance_repository.get_by_id(step.instance_id)
+        if not instance:
+            return
+
+        link = await self.workflow_has_action_repository.get_by_id(
+            instance.workflow_id, step.action_id
+        )
+        if not link or not link.condition_id:
+            return
+
+        from models.condition import Condition
+        result = await self.db.execute(
+            select(Condition)
+            .where(Condition.condition_id == link.condition_id)
+            .options(selectinload(Condition.role))
+        )
+        condition = result.scalar_one_or_none()
+        if not condition or not condition.role_id:
+            return
+
+        from models.document import Document
+        doc_result = await self.db.execute(
+            select(Document.project_id)
+            .where(Document.document_id == instance.document_id)
+        )
+        project_id = doc_result.scalar_one_or_none()
+        if not project_id:
+            return
+
+        from models.work import Work
+        work_result = await self.db.execute(
+            select(Work)
+            .where(Work.user_id == user_id, Work.project_id == project_id)
+        )
+        work = work_result.scalar_one_or_none()
+
+        if not work or work.role_id != condition.role_id:
+            role_name = condition.role.name if condition.role else "required role"
+            raise HTTPException(
+                status_code=403,
+                detail=f"Only users with the '{role_name}' role can complete this step"
+            )
 
     async def _advance_next_step(self, completed_step: WorkflowInstanceStep) -> WorkflowInstanceStep | None:
         if not self.instance_repository or not self.workflow_has_action_repository:
@@ -90,38 +139,6 @@ class WorkflowInstanceStepService:
                 await self.repository.update(step)
                 return step
         return None
-
-    async def _create_version_snapshot(self, completed_step: WorkflowInstanceStep, author_id: str | None, next_step: WorkflowInstanceStep | None):
-        if not self.instance_repository or not self.section_repository or not self.version_repository:
-            return
-
-        instance = await self.instance_repository.get_by_id(completed_step.instance_id)
-        if not instance:
-            return
-
-        sections = await self.section_repository.get_by_document(instance.document_id)
-        snapshot = json.dumps([
-            {
-                "section_name": s.section_template.name if s.section_template else f"Section {i + 1}",
-                "content": s.content or "",
-                "order_index": s.order_index,
-            }
-            for i, s in enumerate(sections)
-        ])
-
-        latest = await self.version_repository.get_latest_number(instance.document_id)
-        action_name = completed_step.action.name if completed_step.action else "Unknown"
-        workflow_name = instance.workflow.name if instance.workflow else "Unknown"
-
-        version = DocumentVersion(
-            document_id=instance.document_id,
-            author_id=author_id,
-            instance_step_id=next_step.instance_step_id if next_step else None,
-            version_number=latest + 1,
-            full_content=snapshot,
-            note=f'Auto-saved after completing step "{action_name}" in workflow "{workflow_name}"',
-        )
-        await self.version_repository.create(version)
 
     async def delete(self, instance_step_id: str):
         step = await self.repository.get_by_id(instance_step_id)

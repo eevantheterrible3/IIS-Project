@@ -8,6 +8,7 @@ export default function WorkflowInstancesList() {
     const [instances, setInstances] = useState([]);
     const [workflows, setWorkflows] = useState([]);
     const [documents, setDocuments] = useState([]);
+    const [members, setMembers] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [editTarget, setEditTarget] = useState(null);
     const [form, setForm] = useState(emptyForm);
@@ -20,10 +21,15 @@ export default function WorkflowInstancesList() {
     const [stepForm, setStepForm] = useState({ status: "pending", progress: "0", assigned_user_id: "", note: "" });
     const [deleteStep, setDeleteStep] = useState(null);
 
+    const selectedProject = JSON.parse(localStorage.getItem("selectedProject") || "{}");
+
     useEffect(() => {
         fetchInstances();
         authFetch("/workflows").then(r => r.json()).then(setWorkflows);
         authFetch("/documents/my").then(r => r.json()).then(setDocuments);
+        if (selectedProject.project_id) {
+            authFetch(`/projects/${selectedProject.project_id}/members`).then(r => r.json()).then(setMembers);
+        }
     }, []);
 
     async function fetchInstances() {
@@ -208,8 +214,13 @@ export default function WorkflowInstancesList() {
                             </>
                         )}
                         <div className="crud-form-group">
-                            <label>Designated User ID</label>
-                            <input value={form.designated_user_id} onChange={e => setForm(f => ({ ...f, designated_user_id: e.target.value }))} placeholder="User ID (optional)" />
+                            <label>Designated User</label>
+                            <select value={form.designated_user_id} onChange={e => setForm(f => ({ ...f, designated_user_id: e.target.value }))}>
+                                <option value="">None</option>
+                                {members.map(m => (
+                                    <option key={m.user_id} value={m.user_id}>{m.name} ({m.role})</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="crud-form-group">
                             <label>Note</label>
@@ -253,8 +264,13 @@ export default function WorkflowInstancesList() {
                             <input type="range" min="0" max="100" value={stepForm.progress} onChange={e => setStepForm(f => ({ ...f, progress: e.target.value }))} />
                         </div>
                         <div className="crud-form-group">
-                            <label>Assigned User ID</label>
-                            <input value={stepForm.assigned_user_id} onChange={e => setStepForm(f => ({ ...f, assigned_user_id: e.target.value }))} placeholder="User ID (optional)" />
+                            <label>Assigned User</label>
+                            <select value={stepForm.assigned_user_id} onChange={e => setStepForm(f => ({ ...f, assigned_user_id: e.target.value }))}>
+                                <option value="">None</option>
+                                {members.map(m => (
+                                    <option key={m.user_id} value={m.user_id}>{m.name} ({m.role})</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="crud-form-group">
                             <label>Note</label>

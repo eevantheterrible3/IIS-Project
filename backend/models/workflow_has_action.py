@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, ForeignKey
+from sqlalchemy import Column, String, Boolean, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -11,6 +11,7 @@ class WorkflowHasAction(Base):
     next_action = Column(String(36), ForeignKey("workflow_actions.action_id", ondelete="SET NULL"), nullable=True)
     is_start_step = Column(Boolean, nullable=False, default=False)
     condition_id = Column(String(36), ForeignKey("conditions.condition_id", ondelete="SET NULL"), nullable=True)
+    step_order = Column(Integer, nullable=False, default=0)
 
     workflow = relationship("Workflow", back_populates="workflow_actions")
     action = relationship("WorkflowAction", back_populates="workflow_links", foreign_keys=[action_id])

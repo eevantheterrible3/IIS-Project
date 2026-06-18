@@ -6,8 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.dependencies import get_current_user
 from database import get_db
 from models.user import User
-from repositories.document_section_repository import DocumentSectionRepository
-from repositories.document_version_repository import DocumentVersionRepository
 from repositories.workflow_has_action_repository import WorkflowHasActionRepository
 from repositories.workflow_instance_repository import WorkflowInstanceRepository
 from repositories.workflow_instance_step_repository import WorkflowInstanceStepRepository
@@ -61,9 +59,8 @@ async def update_step(
     service = WorkflowInstanceStepService(
         WorkflowInstanceStepRepository(db),
         instance_repository=WorkflowInstanceRepository(db),
-        section_repository=DocumentSectionRepository(db),
-        version_repository=DocumentVersionRepository(db),
         workflow_has_action_repository=WorkflowHasActionRepository(db),
+        db=db,
     )
     return await service.update(instance_step_id, request, author_id=current_user.user_id)
 

@@ -13,7 +13,8 @@ class DocumentVersion(Base):
     author_id = Column(String(36), ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
     instance_step_id = Column(String(36), ForeignKey("workflow_instance_steps.instance_step_id", ondelete="SET NULL"), nullable=True)
     version_number = Column(Integer, nullable=False)
-    full_content = Column(Text)
+    file_path = Column(String(500), nullable=True)
+    file_name = Column(String(255), nullable=True)
     note = Column(String(500))
 
     created_at = Column(DateTime, server_default=func.now())

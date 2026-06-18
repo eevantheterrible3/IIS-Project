@@ -26,3 +26,4 @@ class WorkflowHasActionResponse(BaseModel):
     next_action_name: Optional[str] = None
     is_start_step: bool
     condition_id: Optional[str] = None
+    step_order: int = 0

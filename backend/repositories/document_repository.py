@@ -2,7 +2,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from models.document import Document
-from models.document_section import DocumentSection
 from models.is_marked import IsMarked
 from models.tag import Tag
 from models.metadata import DocumentMetadata
@@ -43,25 +42,37 @@ class DocumentRepository:
     
         return result.scalar_one_or_none()
     async def get_by_user_id(self, user_id: int):
+        from models.role import Role
+        from models.workflow_instance import WorkflowInstance
+        from sqlalchemy import or_
+
+        admin_projects = (
+            select(Work.project_id)
+            .join(Role, Work.role_id == Role.role_id)
+            .where(Work.user_id == user_id, Role.name == "ADMIN")
+        ).scalar_subquery()
+
+        assigned_documents = (
+            select(WorkflowInstance.document_id)
+            .where(WorkflowInstance.designated_user_id == user_id)
+        ).scalar_subquery()
+
         result = await self.db.execute(
             select(Document)
-            .join(Work, Work.project_id == Document.project_id)
-            .where(Work.user_id == user_id)
+            .where(
+                or_(
+                    Document.user_id == user_id,
+                    Document.project_id.in_(admin_projects),
+                    Document.document_id.in_(assigned_documents),
+                )
+            )
             .options(selectinload(Document.document_type))
             .order_by(Document.updated_at.desc().nullslast(), Document.created_at.desc())
         )
         return result.scalars().unique().all()
 
-    async def create_document(self, document: Document, section_templates: list):
+    async def create_document(self, document: Document):
         self.db.add(document)
-        await self.db.flush()
-        for template in section_templates:
-            self.db.add(DocumentSection(
-                document_id=document.document_id,
-                section_template_id=template.section_template_id,
-                content=None,
-                order_index=template.order_index,
-            ))
         await self.db.commit()
         await self.db.refresh(document)
         return document
