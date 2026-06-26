@@ -315,7 +315,15 @@ export default function ProjectDocuments() {
                             ) : (
                                 documents.map((document) => (
                                     <tr key={document.document_id}>
-                                        <td>{document.name}</td>
+                                        <td>
+                                            <button
+                                                type="button"
+                                                className="document-name-link"
+                                                onClick={() => navigate(`/documents/${document.document_id}`)}
+                                            >
+                                                {document.name}
+                                            </button>
+                                        </td>
                                         <td>{document.document_type_name || "-"}</td>
                                         <td>{formatDate(document.created_at)}</td>
                                         <td>{document.status || "-"}</td>

@@ -35,12 +35,12 @@ from repositories.activity_repository import ActivityRepository
 from models.activity import ActivityType
 from schemas.activity_schema import ActivityResponse
 from services.permission_service import PermissionService
+from services.document_activity_service import DocumentActivityReportService
 from repositories.permission_repository import PermissionRepository
 from schemas.document_permission_schema import (
     DocumentUserPermissionResponse,
     AddDocumentPermissionsRequest
 )
-
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
 
@@ -369,69 +369,29 @@ async def get_document_activities(
     activity_repository = ActivityRepository(db)
     return await activity_repository.get_document_activities(document_id)
 
+
 @router.get("/{document_id}/activities/report")
 async def get_document_activities_report(
     document_id: str,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    document_repository = DocumentRepository(db)
-    document = await document_repository.get_document_details(document_id)
+    service = DocumentActivityReportService(
+        document_repository=DocumentRepository(db),
+        activity_repository=ActivityRepository(db),
+    )
 
-    if document is None:
+    report_buffer = await service.generate_report(document_id)
+
+    if report_buffer is None:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    activity_repository = ActivityRepository(db)
-    activities = await activity_repository.get_document_activities(document_id)
-
-    buffer = BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=A4)
-
-    width, height = A4
-    y = height - 50
-
-    def write_line(text, font="Helvetica", size=11, gap=20):
-        nonlocal y
-
-        if y < 60:
-            pdf.showPage()
-            y = height - 50
-
-        pdf.setFont(font, size)
-        pdf.drawString(50, y, text)
-        y -= gap
-
-    write_line("Document Activity Report", "Helvetica-Bold", 18, 35)
-
-    write_line(f"Document: {document.name}")
-    write_line(f"Project: {document.project.name if document.project else ''}")
-    write_line(f"Document ID: {document.document_id}", gap=30)
-
-    write_line("Activities:", "Helvetica-Bold", 13, 25)
-
-    if not activities:
-        write_line("No activities recorded for this document.")
-    else:
-        for activity in activities:
-            user_name = "Unknown user"
-
-            if activity.user:
-                user_name = f"{activity.user.name} {activity.user.last_name}".strip()
-
-            activity_type = activity.type.value if hasattr(activity.type, "value") else str(activity.type)
-            activity_date = activity.date.strftime("%d.%m.%Y. %H:%M") if activity.date else ""
-
-            write_line(f"- {user_name} {activity_type} document on {activity_date}", gap=22)
-
-    pdf.save()
-    buffer.seek(0)
-
     return StreamingResponse(
-        buffer,
+        report_buffer,
         media_type="application/pdf",
         headers={
             "Content-Disposition": f'inline; filename="document_activity_{document_id}.pdf"'
-        }
+        },
     )
 @router.get("/{document_id}/permissions", response_model=list[DocumentUserPermissionResponse])
 async def get_document_permissions(

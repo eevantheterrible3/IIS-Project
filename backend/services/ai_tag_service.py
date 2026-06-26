@@ -100,7 +100,7 @@ Document content:
             return []
 
         return self._get_tags_from_parsed_json(parsed)
-
+        
     def _get_tags_from_parsed_json(self, parsed) -> list[str]:
         if isinstance(parsed, dict):
             tags = parsed.get("tags", [])

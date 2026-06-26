@@ -176,6 +176,63 @@ export default function DocumentDetails() {
 
         window.open(fileUrl, "_blank");
     }
+    function getActivityInitials(activity) {
+        const userName = getActivityUserName(activity);
+
+        return userName
+            .split(" ")
+            .filter(Boolean)
+            .map((part) => part.charAt(0).toUpperCase())
+            .slice(0, 2)
+            .join("");
+    }
+
+    function getActivityConfig(type) {
+        const normalizedType = String(type || "").toLowerCase();
+
+        if (normalizedType.includes("view")) {
+            return {
+                label: "Viewed",
+                description: "viewed this document",
+                className: "activity-badge-view",
+                icon: "👁",
+            };
+        }
+
+        if (normalizedType.includes("update")) {
+            return {
+                label: "Updated",
+                description: "updated this document",
+                className: "activity-badge-update",
+                icon: "✎",
+            };
+        }
+
+        if (normalizedType.includes("create")) {
+            return {
+                label: "Created",
+                description: "created this document",
+                className: "activity-badge-create",
+                icon: "+",
+            };
+        }
+
+        if (normalizedType.includes("delete")) {
+            return {
+                label: "Deleted",
+                description: "deleted this document",
+                className: "activity-badge-delete",
+                icon: "×",
+            };
+        }
+
+        return {
+            label: "Activity",
+            description: formatActivityType(type),
+            className: "activity-badge-default",
+            icon: "•",
+        };
+    }
 
     return (
         <div className="document-details-page">
@@ -322,7 +379,12 @@ export default function DocumentDetails() {
                 <div className="activity-modal-overlay">
                     <div className="activity-modal">
                         <div className="activity-modal-header">
-                            <h2>Document Activity</h2>
+                            <div>
+                                <h2>Document Activity</h2>
+                                <p className="activity-modal-subtitle">
+                                    Activity history for <strong>{document.name}</strong>
+                                </p>
+                            </div>
 
                             <button
                                 className="activity-modal-close"
@@ -332,34 +394,67 @@ export default function DocumentDetails() {
                             </button>
                         </div>
 
-                        {activitiesLoading ? (
-                            <div className="activity-modal-message">
-                                Loading activities...
-                            </div>
-                        ) : activitiesError ? (
-                            <div className="activity-modal-error">
-                                {activitiesError}
-                            </div>
-                        ) : activities.length === 0 ? (
-                            <div className="activity-modal-message">
-                                No activities recorded for this document.
-                            </div>
-                        ) : (
-                            <div className="activity-list">
-                                {activities.map((activity) => (
-                                    <div key={activity.activity_id} className="activity-item">
-                                        <div className="activity-text">
-                                            <strong>{getActivityUserName(activity)}</strong>{" "}
-                                            {formatActivityType(activity.type)}
-                                        </div>
-
-                                        <div className="activity-date">
-                                            {formatActivityDate(activity.date)}
-                                        </div>
+                        <div className="activity-modal-content">
+                            {activitiesLoading ? (
+                                <div className="activity-modal-message">
+                                    Loading activities...
+                                </div>
+                            ) : activitiesError ? (
+                                <div className="activity-modal-error">
+                                    {activitiesError}
+                                </div>
+                            ) : activities.length === 0 ? (
+                                <div className="activity-modal-message">
+                                    No activities recorded for this document.
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="activity-modal-summary">
+                                        Total activities: <strong>{activities.length}</strong>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+
+                                    <table className="activity-table">
+                                        <thead>
+                                            <tr>
+                                                <th>User</th>
+                                                <th>Activity</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            {activities.map((activity) => (
+                                                <tr key={activity.activity_id}>
+                                                    <td>
+                                                        <div className="activity-user-cell">
+                                                            <div className="activity-user-avatar">
+                                                                {getActivityUserName(activity)
+                                                                    .charAt(0)
+                                                                    .toUpperCase()}
+                                                            </div>
+
+                                                            <span>
+                                                                {getActivityUserName(activity)}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+
+                                                    <td>
+                                                        <span className="activity-type-text">
+                                                            {formatActivityType(activity.type)}
+                                                        </span>
+                                                    </td>
+
+                                                    <td className="activity-date-cell">
+                                                        {formatActivityDate(activity.date)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
