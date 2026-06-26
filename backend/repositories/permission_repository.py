@@ -11,6 +11,9 @@ from sqlalchemy import select, func
 from models.user import User
 from models.permission import Permission
 from models.allows import Allows
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+
 
 class PermissionRepository:
     def __init__(self, db: AsyncSession):
@@ -153,3 +156,12 @@ class PermissionRepository:
         await self.db.flush()
 
         return allowed_permission
+
+    async def get_project_members_with_roles(self, project_id: str):
+        result = await self.db.execute(
+            select(Work)
+            .options(selectinload(Work.user), selectinload(Work.role))
+            .where(Work.project_id == project_id)
+        )
+
+        return result.scalars().all()

@@ -369,7 +369,6 @@ async def get_document_activities(
     activity_repository = ActivityRepository(db)
     return await activity_repository.get_document_activities(document_id)
 
-
 @router.get("/{document_id}/activities/report")
 async def get_document_activities_report(
     document_id: str,
@@ -379,6 +378,7 @@ async def get_document_activities_report(
     service = DocumentActivityReportService(
         document_repository=DocumentRepository(db),
         activity_repository=ActivityRepository(db),
+        permission_repository=PermissionRepository(db),
     )
 
     report_buffer = await service.generate_report(document_id)

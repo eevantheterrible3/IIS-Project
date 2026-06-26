@@ -23,6 +23,7 @@ export default function DocumentDetails() {
     const [activities, setActivities] = useState([]);
     const [activitiesLoading, setActivitiesLoading] = useState(false);
     const [activitiesError, setActivitiesError] = useState(null);
+    const [activityUserRoles, setActivityUserRoles] = useState({});
 
     const navigate = useNavigate();
 
@@ -97,6 +98,7 @@ export default function DocumentDetails() {
         setShowActivityModal(true);
         setActivitiesLoading(true);
         setActivitiesError(null);
+        setActivityUserRoles({});
 
         const response = await authFetch(`/documents/${documentId}/activities`);
 
@@ -108,6 +110,21 @@ export default function DocumentDetails() {
 
         const data = await response.json();
         setActivities(data);
+
+        const permissionsResponse = await authFetch(`/documents/${documentId}/permissions`);
+
+        if (permissionsResponse.ok) {
+            const permissionsData = await permissionsResponse.json();
+
+            const rolesMap = {};
+
+            permissionsData.forEach((item) => {
+                rolesMap[item.user_id] = item.role || "not_project_member";
+            });
+
+            setActivityUserRoles(rolesMap);
+        }
+
         setActivitiesLoading(false);
     }
 
@@ -160,9 +177,64 @@ export default function DocumentDetails() {
         return fullName || activity.user.email || "Unknown user";
     }
 
-    if (!document) {
-        return <div className="document-details-page">Loading...</div>;
+    function activityTypeContains(activity, value) {
+        return String(activity.type).toLowerCase().includes(value);
     }
+
+    function getActivitySummary() {
+        const dates = activities
+            .map((activity) => activity.date)
+            .filter(Boolean)
+            .map((date) => new Date(date))
+            .filter((date) => !Number.isNaN(date.getTime()));
+
+        const lastActivity =
+            dates.length > 0
+                ? new Date(Math.max(...dates.map((date) => date.getTime())))
+                : null;
+
+        return {
+            total: activities.length,
+            views: activities.filter((activity) =>
+                activityTypeContains(activity, "view")
+            ).length,
+            updates: activities.filter((activity) =>
+                activityTypeContains(activity, "update")
+            ).length,
+            lastActivity: lastActivity ? formatActivityDate(lastActivity) : "-",
+        };
+    }
+
+    function getActivityUserRole(activity) {
+        if (!activity.user?.user_id) {
+            return "-";
+        }
+
+        return activityUserRoles[activity.user.user_id] || "not_project_member";
+    }
+
+    function formatUserRole(role) {
+        const normalizedRole = String(role || "").toLowerCase();
+
+        if (normalizedRole === "admin") {
+            return "Admin";
+        }
+
+        if (normalizedRole === "project_manager") {
+            return "Project manager";
+        }
+
+        if (normalizedRole === "team_member") {
+            return "Team member";
+        }
+
+        if (normalizedRole === "not_project_member") {
+            return "Not project member";
+        }
+
+        return "-";
+    }
+
     async function handleOpenActivityReport() {
         const response = await authFetch(`/documents/${documentId}/activities/report`);
 
@@ -176,62 +248,9 @@ export default function DocumentDetails() {
 
         window.open(fileUrl, "_blank");
     }
-    function getActivityInitials(activity) {
-        const userName = getActivityUserName(activity);
 
-        return userName
-            .split(" ")
-            .filter(Boolean)
-            .map((part) => part.charAt(0).toUpperCase())
-            .slice(0, 2)
-            .join("");
-    }
-
-    function getActivityConfig(type) {
-        const normalizedType = String(type || "").toLowerCase();
-
-        if (normalizedType.includes("view")) {
-            return {
-                label: "Viewed",
-                description: "viewed this document",
-                className: "activity-badge-view",
-                icon: "👁",
-            };
-        }
-
-        if (normalizedType.includes("update")) {
-            return {
-                label: "Updated",
-                description: "updated this document",
-                className: "activity-badge-update",
-                icon: "✎",
-            };
-        }
-
-        if (normalizedType.includes("create")) {
-            return {
-                label: "Created",
-                description: "created this document",
-                className: "activity-badge-create",
-                icon: "+",
-            };
-        }
-
-        if (normalizedType.includes("delete")) {
-            return {
-                label: "Deleted",
-                description: "deleted this document",
-                className: "activity-badge-delete",
-                icon: "×",
-            };
-        }
-
-        return {
-            label: "Activity",
-            description: formatActivityType(type),
-            className: "activity-badge-default",
-            icon: "•",
-        };
+    if (!document) {
+        return <div className="document-details-page">Loading...</div>;
     }
 
     return (
@@ -290,6 +309,7 @@ export default function DocumentDetails() {
                             >
                                 Activity
                             </button>
+
                             <button
                                 className="document-action-button activity-report-button"
                                 onClick={handleOpenActivityReport}
@@ -409,47 +429,76 @@ export default function DocumentDetails() {
                                 </div>
                             ) : (
                                 <>
-                                    <div className="activity-modal-summary">
-                                        Total activities: <strong>{activities.length}</strong>
+                                    <div className="activity-summary-grid">
+                                        <div className="activity-summary-box">
+                                            <span>Total activities: </span>
+                                            <strong>{getActivitySummary().total}</strong>
+                                        </div>
+
+                                        <div className="activity-summary-box">
+                                            <span>Last activity: </span>
+                                            <strong>{getActivitySummary().lastActivity}</strong>
+                                        </div>
+
+                                        <div className="activity-summary-box">
+                                            <span>Views: </span>
+                                            <strong>{getActivitySummary().views}</strong>
+                                        </div>
+
+                                        <div className="activity-summary-box">
+                                            <span>Updates: </span>
+                                            <strong>{getActivitySummary().updates}</strong>
+                                        </div>
                                     </div>
 
                                     <table className="activity-table">
                                         <thead>
                                             <tr>
                                                 <th>User</th>
+                                                <th>Role</th>
                                                 <th>Activity</th>
                                                 <th>Date</th>
                                             </tr>
                                         </thead>
 
                                         <tbody>
-                                            {activities.map((activity) => (
-                                                <tr key={activity.activity_id}>
-                                                    <td>
-                                                        <div className="activity-user-cell">
-                                                            <div className="activity-user-avatar">
-                                                                {getActivityUserName(activity)
-                                                                    .charAt(0)
-                                                                    .toUpperCase()}
+                                            {[...activities]
+                                                .sort(
+                                                    (a, b) =>
+                                                        new Date(b.date || 0) -
+                                                        new Date(a.date || 0)
+                                                )
+                                                .map((activity) => (
+                                                    <tr key={activity.activity_id}>
+                                                        <td>
+                                                            <div className="activity-user-cell">
+                                                                <div className="activity-user-avatar">
+                                                                    {getActivityUserName(activity)
+                                                                        .charAt(0)
+                                                                        .toUpperCase()}
+                                                                </div>
+
+                                                                <span>
+                                                                    {getActivityUserName(activity)}
+                                                                </span>
                                                             </div>
+                                                        </td>
 
-                                                            <span>
-                                                                {getActivityUserName(activity)}
+                                                        <td className="activity-role-cell">
+                                                            {formatUserRole(getActivityUserRole(activity))}
+                                                        </td>
+
+                                                        <td>
+                                                            <span className="activity-type-text">
+                                                                {formatActivityType(activity.type)}
                                                             </span>
-                                                        </div>
-                                                    </td>
+                                                        </td>
 
-                                                    <td>
-                                                        <span className="activity-type-text">
-                                                            {formatActivityType(activity.type)}
-                                                        </span>
-                                                    </td>
-
-                                                    <td className="activity-date-cell">
-                                                        {formatActivityDate(activity.date)}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                                        <td className="activity-date-cell">
+                                                            {formatActivityDate(activity.date)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
                                         </tbody>
                                     </table>
                                 </>
