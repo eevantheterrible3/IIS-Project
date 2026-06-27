@@ -1,0 +1,276 @@
+.upload-title-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+}
+
+.upload-icon {
+    color: #2563eb;
+    font-size: 34px;
+}
+
+.upload-title-row h1 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.upload-title-row p {
+    margin: 4px 0 0;
+    color: #777;
+    font-size: 14px;
+}
+
+.upload-card {
+    width: 640px;
+    background: #f3f3f3;
+    border-radius: 8px;
+    padding: 26px 30px;
+    box-sizing: border-box;
+}
+
+.upload-card h2 {
+    text-align: center;
+    margin: 0 0 28px;
+    font-size: 18px;
+    font-weight: 400;
+}
+
+.upload-form-group {
+    margin-bottom: 24px;
+}
+
+.upload-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.upload-form-group > input {
+    width: 100%;
+    height: 38px;
+    border: 1px solid #b8b8b8;
+    border-radius: 6px;
+    padding: 0 12px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background: white;
+}
+
+.file-upload-area {
+    min-height: 130px;
+    border: 1px dashed #999;
+    border-radius: 8px;
+    background: white;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-align: center;
+    box-sizing: border-box;
+    padding: 20px;
+}
+
+.file-upload-area input {
+    display: none;
+}
+
+.file-upload-icon {
+    font-size: 30px;
+    color: #2563eb;
+    margin-bottom: 8px;
+}
+
+.file-upload-text {
+    font-size: 14px;
+    color: #222;
+    margin-bottom: 4px;
+}
+
+.file-upload-subtext {
+    font-size: 12px;
+    color: #777;
+}
+
+.ai-tags-section {
+    margin-top: 8px;
+    margin-bottom: 24px;
+}
+
+.ai-tags-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.ai-tags-title-row h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.generate-tags-button {
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: white;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.generate-tags-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.generate-tags-error {
+    margin-bottom: 10px;
+    color: #dc2626;
+    font-size: 14px;
+}
+
+.suggested-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: white;
+    border: 1px solid #d1d1d1;
+    border-radius: 6px;
+    padding: 10px;
+    min-height: 42px;
+    box-sizing: border-box;
+}
+
+.suggested-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #e0ecff;
+    color: #1e3a8a;
+    border-radius: 999px;
+    padding: 6px 9px 6px 12px;
+    font-size: 13px;
+}
+
+.remove-tag-button {
+    border: none;
+    background: transparent;
+    color: #1e3a8a;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+}
+
+.no-ai-tags-message {
+    background: white;
+    border: 1px dashed #c4c4c4;
+    border-radius: 6px;
+    padding: 11px 12px;
+    font-size: 13px;
+    color: #777;
+}
+
+.metadata-section {
+    margin-top: 8px;
+}
+
+.metadata-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.metadata-title-row h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.add-metadata-button {
+    border: none;
+    border-radius: 6px;
+    background: #2563eb;
+    color: white;
+    padding: 7px 12px;
+    cursor: pointer;
+}
+
+.metadata-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.metadata-row input {
+    flex: 1;
+    height: 36px;
+    border: 1px solid #b8b8b8;
+    border-radius: 6px;
+    padding: 0 10px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background: white;
+}
+
+.metadata-name-input.readonly-metadata-name {
+    background: #eeeeee;
+    color: #333;
+    cursor: not-allowed;
+}
+
+.metadata-value-input[type="date"] {
+    color: #333;
+}
+
+.remove-metadata-button {
+    width: 38px;
+    height: 36px;
+    border: none;
+    border-radius: 6px;
+    background: #dc2626;
+    color: white;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.remove-metadata-button:disabled {
+    background: #b8b8b8;
+    cursor: not-allowed;
+}
+
+.upload-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.cancel-upload-button,
+.submit-upload-button {
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cancel-upload-button {
+    background: #dcdcdc;
+    color: #222;
+}
+
+.submit-upload-button {
+    background: #2563eb;
+    color: white;
+}
+
+.submit-upload-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}

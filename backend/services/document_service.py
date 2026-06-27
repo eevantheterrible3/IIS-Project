@@ -1,6 +1,15 @@
+import uuid
 from fastapi import HTTPException
 from pathlib import Path
-from schemas.all_document_schema import DocumentListResponse, DocumentListItemResponse, DocumentCreateRequest
+
+from models.document import Document
+from models.metadata import DocumentMetadata
+from schemas.all_document_schema import (
+    DocumentListResponse,
+    ProjectDocumentListResponse,
+    DocumentListItemResponse,
+    DocumentCreateRequest
+)
 from schemas.document_detail_schema import (
     DocumentDetailResponse,
     DocumentMetadataResponse,
@@ -11,6 +20,7 @@ from schemas.document_detail_schema import (
 class DocumentService:
     def __init__(self, document_repository):
         self.document_repository = document_repository
+
 
     async def get_documents_for_user(self, user_id: int) -> list[DocumentListItemResponse]:
         documents = await self.document_repository.get_by_user_id(user_id)
@@ -40,13 +50,118 @@ class DocumentService:
         )
         return await self.document_repository.create_document(document, section_templates)
 
-    async def get_documents_for_project(self, project_id: int) -> list[DocumentListResponse]:
-        documents = await self.document_repository.get_documents_by_project_id(project_id)
+    async def upload_document(
+        self,
+        project_id: str,
+        user_id: str,
+        name: str,
+        file,
+        metadata: list,
+        tags: list | None = None,
+        document_type_id: str | None = None,
+        user_prompt: str | None = None,
+    ):
+        upload_dir = Path("uploads/documents")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        original_filename = Path(file.filename).name
+        stored_filename = f"{uuid.uuid4()}_{original_filename}"
+        file_path = upload_dir / stored_filename
+
+        content = await file.read()
+        file_path.write_bytes(content)
+
+        document = Document(
+            name=name,
+            user_id=user_id,
+            project_id=project_id,
+            document_type_id=document_type_id if document_type_id else None,
+            user_prompt=user_prompt,
+            file_path=str(file_path),
+            status="draft",
+        )
+
+        metadata_items = []
+
+        for item in metadata:
+            metadata_name = item.get("name")
+            metadata_value = item.get("value")
+
+            if metadata_name and metadata_name.strip():
+                metadata_items.append(
+                    DocumentMetadata(
+                        name=metadata_name.strip(),
+                        value=metadata_value,
+                    )
+                )
+
+        tag_names = self._clean_tag_names(tags or [])
+
+        uploaded_document = await self.document_repository.create_uploaded_document(
+            document=document,
+            metadata_items=metadata_items,
+            tag_names=tag_names,
+        )
+
+        return DocumentListItemResponse(
+            document_id=uploaded_document.document_id,
+            name=uploaded_document.name,
+            user_prompt=uploaded_document.user_prompt,
+            document_type_id=uploaded_document.document_type_id,
+            document_type_name=None,
+            status=uploaded_document.status,
+            created_at=uploaded_document.created_at,
+            updated_at=uploaded_document.updated_at,
+        )
+    
+    def _clean_tag_names(self, tags: list) -> list[str]:
+        cleaned_tags = []
+
+        for tag in tags:
+            if not isinstance(tag, str):
+                continue
+
+            cleaned_tag = tag.strip().lower()
+
+            if not cleaned_tag:
+                continue
+
+            if cleaned_tag not in cleaned_tags:
+                cleaned_tags.append(cleaned_tag)
+
+        return cleaned_tags
+
+    async def get_documents_for_project(
+        self,
+        project_id: str,
+        name: str | None = None,
+        author: str | None = None,
+        date: str | None = None,
+        document_type: str | None = None,
+        tag: str | None = None,
+    ) -> list[ProjectDocumentListResponse]:
+        documents = await self.document_repository.get_documents_by_project_id(
+            project_id,
+            name=name,
+            author=author,
+            date=date,
+            document_type=document_type,
+            tag=tag,
+        )
 
         return [
-            DocumentListResponse(
+            ProjectDocumentListResponse(
                 document_id=document.document_id,
-                name=document.name
+                name=document.name,
+                document_type_name=document.document_type.name if document.document_type else None,
+                created_at=document.created_at,
+                status=document.status,
+                tags=[
+                    item.tag.name
+                    for item in document.tags
+                    if item.tag is not None
+                ],
+                author=f"{document.user.name} {document.user.last_name}" if document.user else None,
             )
             for document in documents
         ]

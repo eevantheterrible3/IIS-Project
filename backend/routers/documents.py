@@ -1,14 +1,17 @@
 import json
 from typing import List
-
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from io import BytesIO
+from fastapi.responses import FileResponse, StreamingResponse
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from tempfile import NamedTemporaryFile
+from services.pdf_text_extractor import PdfTextExtractor
+from services.ai_tag_service import AiTagService
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-
 from core.dependencies import get_current_user
 from database import get_db
 from models.document_version import DocumentVersion
@@ -28,6 +31,15 @@ from schemas.document_update_schema import UpdateDocumentRequest
 from schemas.document_version_schema import DocumentSaveRequest, DocumentVersionResponse
 from services.document_section_service import DocumentSectionService
 from services.document_service import DocumentService
+from repositories.activity_repository import ActivityRepository
+from models.activity import ActivityType
+from schemas.activity_schema import ActivityResponse
+from services.permission_service import PermissionService
+from repositories.permission_repository import PermissionRepository
+from schemas.document_permission_schema import (
+    DocumentUserPermissionResponse,
+    AddDocumentPermissionsRequest
+)
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -94,6 +106,96 @@ async def create_document(
         updated_at=doc.updated_at,
     )
 
+@router.post("/upload", response_model=DocumentListItemResponse)
+async def upload_document(
+    project_id: str = Form(...),
+    name: str = Form(...),
+    metadata_json: str = Form("[]"),
+    tags_json: str = Form("[]"),
+    document_type_id: str | None = Form(None),
+    user_prompt: str | None = Form(None),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = DocumentService(DocumentRepository(db))
+
+    try:
+        metadata = json.loads(metadata_json)
+    except json.JSONDecodeError:
+        metadata = []
+
+    try:
+        tags = json.loads(tags_json)
+    except json.JSONDecodeError:
+        tags = []
+
+    if not isinstance(tags, list):
+        tags = []
+
+    return await service.upload_document(
+        project_id=project_id,
+        user_id=current_user.user_id,
+        name=name,
+        file=file,
+        metadata=metadata,
+        tags=tags,
+        document_type_id=document_type_id,
+        user_prompt=user_prompt,
+    )
+
+@router.post("/suggest-tags")
+async def suggest_tags_for_uploaded_file(
+    name: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    if not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+
+    content = await file.read()
+
+    with NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        temp_file.write(content)
+        temp_file_path = temp_file.name
+
+    extractor = PdfTextExtractor()
+
+    try:
+        document_text = extractor.extract_text(temp_file_path, max_chars=5000)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    finally:
+        Path(temp_file_path).unlink(missing_ok=True)
+
+    if not document_text:
+        raise HTTPException(
+            status_code=400,
+            detail="No text could be extracted from this PDF. The document may be scanned."
+        )
+
+    ai_tag_service = AiTagService()
+
+    try:
+        tags = await ai_tag_service.suggest_tags(
+            document_name=name,
+            document_text=document_text,
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=503,
+            detail="AI tag service is currently unavailable."
+        )
+
+    if not tags:
+        raise HTTPException(
+            status_code=502,
+            detail="AI service did not return any tags."
+        )
+
+    return {
+        "tags": tags
+    }
 
 @router.get("/{document_id}", response_model=DocumentDetailResponse)
 async def get_document_details(
@@ -102,8 +204,19 @@ async def get_document_details(
     db: AsyncSession = Depends(get_db),
 ):
     service = DocumentService(DocumentRepository(db))
-    return await service.get_document_details(document_id)
 
+    document = await service.get_document_details(document_id)
+
+    activity_repository = ActivityRepository(db)
+    await activity_repository.create_activity(
+        document_id=document_id,
+        user_id=current_user.user_id,
+        activity_type=ActivityType.VIEW
+    )
+
+    await db.commit()
+
+    return document
 
 @router.get("/{document_id}/file")
 async def get_document_file(
@@ -142,9 +255,22 @@ async def update_document(
     db: AsyncSession = Depends(get_db),
 ):
     service = DocumentService(DocumentRepository(db))
-    return await service.update_document_tags_and_metadata(document_id, request)
 
+    updated_document = await service.update_document_tags_and_metadata(
+        document_id,
+        request
+    )
 
+    activity_repository = ActivityRepository(db)
+    await activity_repository.create_activity(
+        document_id=document_id,
+        user_id=current_user.user_id,
+        activity_type=ActivityType.UPDATE
+    )
+
+    await db.commit()
+
+    return updated_document
 @router.get("/{document_id}/sections", response_model=List[DocumentSectionResponse])
 async def get_document_sections(
     document_id: str,
@@ -234,3 +360,128 @@ async def get_document_versions(
         )
         for v in versions
     ]
+@router.get("/{document_id}/activities", response_model=list[ActivityResponse])
+async def get_document_activities(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    activity_repository = ActivityRepository(db)
+    return await activity_repository.get_document_activities(document_id)
+
+@router.get("/{document_id}/activities/report")
+async def get_document_activities_report(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    document_repository = DocumentRepository(db)
+    document = await document_repository.get_document_details(document_id)
+
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    activity_repository = ActivityRepository(db)
+    activities = await activity_repository.get_document_activities(document_id)
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+
+    width, height = A4
+    y = height - 50
+
+    def write_line(text, font="Helvetica", size=11, gap=20):
+        nonlocal y
+
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+
+        pdf.setFont(font, size)
+        pdf.drawString(50, y, text)
+        y -= gap
+
+    write_line("Document Activity Report", "Helvetica-Bold", 18, 35)
+
+    write_line(f"Document: {document.name}")
+    write_line(f"Project: {document.project.name if document.project else ''}")
+    write_line(f"Document ID: {document.document_id}", gap=30)
+
+    write_line("Activities:", "Helvetica-Bold", 13, 25)
+
+    if not activities:
+        write_line("No activities recorded for this document.")
+    else:
+        for activity in activities:
+            user_name = "Unknown user"
+
+            if activity.user:
+                user_name = f"{activity.user.name} {activity.user.last_name}".strip()
+
+            activity_type = activity.type.value if hasattr(activity.type, "value") else str(activity.type)
+            activity_date = activity.date.strftime("%d.%m.%Y. %H:%M") if activity.date else ""
+
+            write_line(f"- {user_name} {activity_type} document on {activity_date}", gap=22)
+
+    pdf.save()
+    buffer.seek(0)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="document_activity_{document_id}.pdf"'
+        }
+    )
+@router.get("/{document_id}/permissions", response_model=list[DocumentUserPermissionResponse])
+async def get_document_permissions(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = PermissionService(
+        document_repository=DocumentRepository(db),
+        permission_repository=PermissionRepository(db)
+    )
+
+    return await service.get_document_permissions(
+        document_id=document_id,
+        current_user_id=current_user.user_id
+    )
+@router.delete("/{document_id}/permissions/{user_id}/{permission_name}")
+async def remove_document_permission(
+    document_id: str,
+    user_id: str,
+    permission_name: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = PermissionService(
+        document_repository=DocumentRepository(db),
+        permission_repository=PermissionRepository(db)
+    )
+
+    return await service.remove_document_permission(
+        document_id=document_id,
+        target_user_id=user_id,
+        permission_name=permission_name,
+        current_user_id=current_user.user_id
+    )
+@router.post("/{document_id}/permissions")
+async def add_document_permissions(
+    document_id: str,
+    request: AddDocumentPermissionsRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    service = PermissionService(
+        document_repository=DocumentRepository(db),
+        permission_repository=PermissionRepository(db)
+    )
+
+    return await service.add_document_permissions(
+        document_id=document_id,
+        user_ids=request.user_ids,
+        permission_names=request.permissions,
+        current_user_id=current_user.user_id
+    )

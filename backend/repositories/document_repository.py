@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from models.document import Document
@@ -7,16 +7,61 @@ from models.is_marked import IsMarked
 from models.tag import Tag
 from models.metadata import DocumentMetadata
 from models.work import Work
-
+from models.user import User
+from models.document_type import DocumentType
 class DocumentRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_documents_by_project_id(self, project_id: int):
-        result = await self.db.execute(
-            select(Document).where(Document.project_id == project_id)
+    async def get_documents_by_project_id(
+        self,
+        project_id: str,
+        name: str | None = None,
+        author: str | None = None,
+        date: str | None = None,
+        document_type: str | None = None,
+        tag: str | None = None,
+    ):
+        query = (
+            select(Document)
+            .where(Document.project_id == project_id)
+            .options(
+                selectinload(Document.user),
+                selectinload(Document.document_type),
+                selectinload(Document.tags).selectinload(IsMarked.tag),
+            )
         )
-        return result.scalars().all()
+
+        if name:
+            query = query.where(Document.name.ilike(f"%{name}%"))
+
+        if author:
+            query = query.join(Document.user).where(
+                func.concat(User.name, " ", User.last_name).ilike(f"%{author}%")
+            )
+
+        if date:
+            query = query.where(
+                cast(Document.created_at, String).ilike(f"%{date}%")
+            )
+
+        if document_type:
+            query = query.join(Document.document_type).where(
+                DocumentType.name.ilike(f"%{document_type}%")
+            )
+
+        if tag:
+            query = (
+                query
+                .join(Document.tags)
+                .join(IsMarked.tag)
+                .where(Tag.name.ilike(f"%{tag}%"))
+            )
+
+        query = query.order_by(Document.created_at.desc())
+
+        result = await self.db.execute(query)
+        return result.scalars().unique().all()
 
     async def get_document_details(self, document_id: int):
         result = await self.db.execute(
@@ -64,6 +109,43 @@ class DocumentRepository:
             ))
         await self.db.commit()
         await self.db.refresh(document)
+        return document
+    
+    async def create_uploaded_document(
+        self,
+        document: Document,
+        metadata_items: list[DocumentMetadata],
+        tag_names: list[str] | None = None,
+    ):
+        self.db.add(document)
+        await self.db.flush()
+
+        for metadata_item in metadata_items:
+            metadata_item.document_id = document.document_id
+            self.db.add(metadata_item)
+
+        for tag_name in tag_names or []:
+            result = await self.db.execute(
+                select(Tag).where(Tag.name == tag_name)
+            )
+
+            tag = result.scalar_one_or_none()
+
+            if tag is None:
+                tag = Tag(name=tag_name)
+                self.db.add(tag)
+                await self.db.flush()
+
+            self.db.add(
+                IsMarked(
+                    document_id=document.document_id,
+                    tag_id=tag.tag_id,
+                )
+            )
+
+        await self.db.commit()
+        await self.db.refresh(document)
+
         return document
 
     async def update_document_tags_and_metadata(self, document, tags, metadata):

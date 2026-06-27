@@ -8,7 +8,7 @@ from database import get_db
 from models.user import User
 from repositories.document_repository import DocumentRepository
 from repositories.project_repository import ProjectRepository
-from schemas.all_document_schema import DocumentListResponse
+from schemas.all_document_schema import ProjectDocumentListResponse
 from schemas.project_schema import ProjectCreateRequest, ProjectListResponse, ProjectUpdateRequest
 from services.document_service import DocumentService
 from services.project_service import ProjectService
@@ -25,14 +25,26 @@ async def get_my_projects(
     return await service.get_projects_for_user(current_user.user_id)
 
 
-@router.get("/{project_id}/documents", response_model=List[DocumentListResponse])
+@router.get("/{project_id}/documents", response_model=List[ProjectDocumentListResponse])
 async def get_project_documents(
     project_id: str,
+    name: str | None = None,
+    author: str | None = None,
+    date: str | None = None,
+    type: str | None = None,
+    tag: str | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     service = DocumentService(DocumentRepository(db))
-    return await service.get_documents_for_project(project_id)
+    return await service.get_documents_for_project(
+        project_id,
+        name=name,
+        author=author,
+        date=date,
+        document_type=type,
+        tag=tag,
+    )
 
 
 @router.post("")

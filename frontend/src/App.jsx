@@ -22,7 +22,8 @@ import WorkflowInstancesList from "./pages/app/WorkflowInstancesList";
 import ConditionTypesList from "./pages/app/ConditionTypesList";
 import ConditionsList from "./pages/app/ConditionsList";
 import DocumentRatingsList from "./pages/app/DocumentRatingsList";
-
+import ProjectDocuments from "./pages/ProjectDocuments";
+import UploadDocument from "./pages/UploadDocument";
 function App() {
     return (
         <BrowserRouter>
@@ -30,7 +31,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/documents/:documentId" element={<DocumentDetails />} />
-
+                <Route path="/projects/:projectId/documents/upload" element={<UploadDocument />} />
+                <Route path="/projects/:projectId/documents" element={<ProjectDocuments />} />
                 <Route path="/app" element={<AppLayout />}>
                     <Route index element={<Navigate to="/app/documents" replace />} />
                     <Route path="documents" element={<DocumentsList />} />
