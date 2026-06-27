@@ -25,7 +25,7 @@ async def get_projects(
     db: AsyncSession = Depends(get_db),
 ):
     service = ProjectService(ProjectRepository(db))
-    return await service.get_all_for_pr()
+    return await service.get_all_for_pr(current_user.user_id)
 
 
 @router.get("/{project_id}")

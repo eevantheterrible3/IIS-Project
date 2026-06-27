@@ -547,7 +547,7 @@ async def seed():
                     current_status=SubtaskStatus.done, deadline=datetime(2026, 4, 25)),
             Subtask(task_id=task_doc_scanning_id, name="Scanning batch 2 (2013–2015)",
                     description="Scan documents from 2013 to 2015.", assigned_user_id=user_mark_id,
-                    current_status=SubtaskStatus.in_progress, deadline=datetime(2026, 5, 30)),
+                    current_status=SubtaskStatus.todo, deadline=datetime(2026, 5, 30)),
             Subtask(task_id=task_quality_review_id, name="Review batch 1",
                     description="Quality check for documents 2010–2012.", assigned_user_id=user_anna_id,
                     current_status=SubtaskStatus.done, deadline=datetime(2026, 5, 5)),
@@ -559,7 +559,7 @@ async def seed():
                     current_status=SubtaskStatus.done, deadline=datetime(2026, 4, 15)),
             Subtask(task_id=task_file_indexing_id, name="Index batch 1",
                     description="Index scanned files from first batch.", assigned_user_id=user_peter_id,
-                    current_status=SubtaskStatus.in_progress, deadline=datetime(2026, 4, 20)),
+                    current_status=SubtaskStatus.todo, deadline=datetime(2026, 4, 20)),
         ])
 
         db.add_all([

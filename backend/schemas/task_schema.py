@@ -69,3 +69,49 @@ class CreateTaskWithResourcesRequest(BaseModel):
     deadline: str | None = None
     subtasks: list = []
     resources: list[CreateTaskResourceRequest] = []
+
+
+# ── Task detail (Project Realization) ─────────────────────────────────────────
+
+class TaskStepResponse(BaseModel):
+    step_id: str
+    status_name: str
+    is_first: bool
+    is_last: bool
+    is_current: bool
+
+
+class TaskSubtaskResponse(BaseModel):
+    subtask_id: str
+    name: str
+    description: str | None
+    status: str | None
+    deadline: str | None
+    assigned_user: str | None
+    assigned_user_id: str | None
+
+
+class TaskFullDetailResponse(BaseModel):
+    task_id: str
+    project_id: str
+    project_name: str
+    name: str
+    description: str | None
+    priority: str | None
+    status: str | None
+    deadline: str | None
+    created_at: str | None
+    assigned_user: str | None
+    assigned_user_id: str | None
+    is_completed: bool
+    is_late: bool
+    steps: list[TaskStepResponse]
+    current_step_id: str | None
+    next_step_id: str | None
+    next_step_name: str | None
+    subtasks: list[TaskSubtaskResponse]
+    progress_done: int
+    progress_total: int
+    progress_percent: int
+    can_change_status: bool
+    is_manager: bool

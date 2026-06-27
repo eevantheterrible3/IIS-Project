@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { ChevronDown, ChevronRight, X, UserPlus } from "lucide-react";
+import { X, UserPlus } from "lucide-react";
 import { authFetch } from "@/lib/api";
 
 const PRIORITY_CLS = {
@@ -9,11 +9,11 @@ const PRIORITY_CLS = {
     low:    "text-blue-600 bg-blue-50 border border-blue-200",
 };
 
-const SUBTASK_STATUS_CLS = {
-    created:     "text-gray-500 bg-gray-50 border border-gray-200",
-    in_progress: "text-yellow-700 bg-yellow-50 border border-yellow-200",
-    done:        "text-green-700 bg-green-50 border border-green-200",
-};
+function taskStatusCls(task) {
+    if (task.is_completed) return "text-green-700 bg-green-50 border border-green-200";
+    if (task.is_late)      return "text-red-600 bg-red-50 border border-red-200";
+    return "text-yellow-700 bg-yellow-50 border border-yellow-200";
+}
 
 export default function ProjectDetail() {
     const { project_id } = useParams();
@@ -21,7 +21,7 @@ export default function ProjectDetail() {
 
     const [project, setProject]       = useState(null);
     const [loading, setLoading]       = useState(true);
-    const [expanded, setExpanded]     = useState({});
+    const [denied, setDenied]         = useState(false);
 
     // add-member modal
     const [showAddMember, setShowAddMember] = useState(false);
@@ -31,6 +31,7 @@ export default function ProjectDetail() {
 
     async function fetchProject() {
         const r = await authFetch(`/project-realization/projects/${project_id}`);
+        if (r.status === 403) { setDenied(true); setLoading(false); return; }
         if (!r.ok) { setLoading(false); return; }
         const data = await r.json();
         setProject(data);
@@ -38,10 +39,6 @@ export default function ProjectDetail() {
     }
 
     useEffect(() => { fetchProject(); }, [project_id]);
-
-    function toggleExpand(taskId) {
-        setExpanded(prev => ({ ...prev, [taskId]: !prev[taskId] }));
-    }
 
     async function openAddMember() {
         if (allUsers.length === 0) {
@@ -75,17 +72,22 @@ export default function ProjectDetail() {
     if (loading) {
         return <div className="p-8 text-gray-400 text-sm">Loading...</div>;
     }
+    if (denied) {
+        return <div className="p-8 text-gray-500 text-sm">You don't have access to this project.</div>;
+    }
     if (!project) {
         return <div className="p-8 text-gray-400 text-sm">Project not found.</div>;
     }
 
     const { stats, members, tasks, is_manager } = project;
 
+    // completed tasks go to the bottom (they're done)
+    const sortedTasks = [...tasks].sort((a, b) => a.is_completed - b.is_completed);
+
     // users not yet in project (for dropdown)
     const memberIds = new Set(members.map(m => m.user_id));
     const usersToAdd = allUsers.filter(u => !memberIds.has(u.user_id));
 
-    const diffTime = Math.abs( - date1);
     return (
         <div className="p-6 space-y-5">
 
@@ -189,7 +191,7 @@ export default function ProjectDetail() {
                             <th className="text-left px-5 py-3 font-medium">Priority</th>
                             <th className="text-left px-5 py-3 font-medium">Assigned to</th>
                             <th className="text-left px-5 py-3 font-medium">Deadline</th>
-                            <th className="px-5 py-3" />
+                            <th className="text-left px-5 py-3 font-medium">Subtasks</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -200,107 +202,45 @@ export default function ProjectDetail() {
                                 </td>
                             </tr>
                         )}
-                        {tasks.map(task => (
-                            <React.Fragment key={task.task_id}>
-                                {/* Task row */}
+                        {sortedTasks.map(task => {
+                            const done = task.subtasks.filter(s => s.status === "done").length;
+                            return (
                                 <tr
-                                    className={`border-b border-gray-50 transition-colors ${
-                                        task.is_late ? "bg-red-50 hover:bg-red-100" : "hover:bg-gray-50"
-                                    }`}
+                                    key={task.task_id}
+                                    onClick={() => navigate(`/app/project-realization/projects/${project_id}/tasks/${task.task_id}`)}
+                                    className="border-b border-gray-50 last:border-0 hover:bg-gray-50 cursor-pointer transition-colors group"
                                 >
-                                    <td className="px-5 py-3.5 font-medium text-gray-900">
-                                        <div className="flex items-center gap-2">
-                                            {task.subtasks.length > 0 && (
-                                                <button
-                                                    onClick={() => toggleExpand(task.task_id)}
-                                                    className="text-gray-400 hover:text-gray-700 transition-colors"
-                                                >
-                                                    {expanded[task.task_id]
-                                                        ? <ChevronDown size={14} />
-                                                        : <ChevronRight size={14} />
-                                                    }
-                                                </button>
-                                            )}
-                                            {task.subtasks.length === 0 && (
-                                                <span className="w-[14px]" />
-                                            )}
-                                            <span className={task.is_completed ? "line-through text-gray-400" : ""}>
-                                                {task.name}
-                                            </span>
-                                            {task.is_late && (
-                                                <span className="text-xs text-red-500 font-medium">Late</span>
-                                            )}
-                                            {Math.abs(task.deadline - Date.now) && (
-                                                <span className="text-xs text-red-500 font-medium">Late</span>
-                                            )}
-                                        </div>
+                                    <td className="px-5 py-3.5">
+                                        <span className={`font-medium ${task.is_completed ? "line-through text-gray-400" : "text-gray-900"}`}>
+                                            {task.name}
+                                        </span>
                                     </td>
-                                    <td className="px-5 py-3.5 text-gray-600">
-                                        {task.status ?? "—"}
+                                    <td className="px-5 py-3.5">
+                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${taskStatusCls(task)}`}>
+                                            {task.is_late ? "late" : task.status ?? "—"}
+                                        </span>
                                     </td>
                                     <td className="px-5 py-3.5">
                                         {task.priority ? (
                                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITY_CLS[task.priority] ?? ""}`}>
                                                 {task.priority}
                                             </span>
-                                        ) : "—"}
+                                        ) : <span className="text-gray-300">—</span>}
                                     </td>
-                                    <td className="px-5 py-3.5 text-gray-500">
-                                        {task.assigned_user ?? "—"}
+                                    <td className="px-5 py-3.5 text-gray-600">
+                                        {task.assigned_user ?? <span className="text-gray-300">—</span>}
                                     </td>
                                     <td className={`px-5 py-3.5 ${task.is_late ? "text-red-600 font-medium" : "text-gray-500"}`}>
-                                        {task.deadline ?? "—"}
+                                        {task.deadline ?? <span className="text-gray-300">—</span>}
                                     </td>
-                                    <td className="px-5 py-3.5 text-right">
-                                        {task.subtasks.length > 0 && (
-                                            <span className="text-xs text-gray-400">
-                                                {task.subtasks.length} subtask{task.subtasks.length !== 1 ? "s" : ""}
-                                            </span>
-                                        )}
+                                    <td className="px-5 py-3.5 text-gray-500">
+                                        {task.subtasks.length > 0
+                                            ? `${done}/${task.subtasks.length}`
+                                            : <span className="text-gray-300">—</span>}
                                     </td>
                                 </tr>
-
-                                {/* Subtask rows */}
-                                {expanded[task.task_id] && task.subtasks.map(s => (
-                                    <tr key={s.subtask_id} className="bg-gray-50 border-b border-gray-100">
-                                        <td className="pl-14 pr-5 py-2.5 text-gray-600">
-                                            ↳ {s.name}
-                                        </td>
-                                        <td className="px-5 py-2.5">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${SUBTASK_STATUS_CLS[s.status] ?? ""}`}>
-                                                {s.status?.replace("_", " ")}
-                                            </span>
-                                        </td>
-                                        <td className="px-5 py-2.5 text-gray-400">—</td>
-                                        <td className="px-5 py-2.5 text-gray-500 text-xs">{s.assigned_user ?? "—"}</td>
-                                        <td className="px-5 py-2.5 text-gray-400 text-xs">{s.deadline ?? "—"}</td>
-                                        <td />
-                                    </tr>
-                                ))}
-
-                                {/* Resources row */}
-                                {expanded[task.task_id] && (
-                                    <tr className="bg-blue-50 border-b border-blue-100">
-                                        <td className="pl-14 pr-5 py-2 text-xs text-blue-700 font-medium" colSpan={6}>
-                                            {task.resources.length === 0
-                                                ? "No resources assigned"
-                                                : (
-                                                    <span className="flex items-center gap-3 flex-wrap">
-                                                        <span className="text-blue-400">Resources:</span>
-                                                        {task.resources.map(r => (
-                                                            <span key={r.resource_id} className="px-2 py-0.5 bg-white border border-blue-200 rounded-full text-blue-700">
-                                                                {r.name} × {r.quantity}
-                                                                <span className="ml-1.5 text-blue-400">({r.status?.replace("_", " ")})</span>
-                                                            </span>
-                                                        ))}
-                                                    </span>
-                                                )
-                                            }
-                                        </td>
-                                    </tr>
-                                )}
-                            </React.Fragment>
-                        ))}
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

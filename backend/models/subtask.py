@@ -9,8 +9,7 @@ from database import Base
 
 
 class SubtaskStatus(str, enum.Enum):
-    created = "created"
-    in_progress = "in_progress"
+    todo = "todo"
     done = "done"
 
 
@@ -22,7 +21,7 @@ class Subtask(Base):
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     deadline = Column(DateTime, nullable=True)
-    current_status = Column(Enum(SubtaskStatus), default=SubtaskStatus.created)
+    current_status = Column(Enum(SubtaskStatus), default=SubtaskStatus.todo)
     assigned_user_id = Column(String(36), ForeignKey("users.user_id"), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
 

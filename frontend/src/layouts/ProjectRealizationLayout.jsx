@@ -1,19 +1,22 @@
 import { useState } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
-import { Home, FolderKanban, BarChart2, Package } from "lucide-react";
+import { Home, FolderKanban, Package, GitBranch } from "lucide-react";
 
 const navItems = [
-    { to: "/app/project-realization/home",      icon: Home,         label: "Home" },
-    { to: "/app/project-realization/projects",  icon: FolderKanban, label: "Projects" },
-    { to: "/app/project-realization/analytics", icon: BarChart2,    label: "Analytics" },
+    { to: "/app/project-realization/home",     icon: Home,         label: "Home" },
+    { to: "/app/project-realization/projects", icon: FolderKanban, label: "Projects" },
     { to: "/app/project-realization/resources", icon: Package,      label: "Resources" },
+];
+
+const adminNavItems = [
+    { to: "/app/project-realization/workflows", icon: GitBranch, label: "Workflows" },
 ];
 
 const pageTitles = {
     "/app/project-realization/projects":  "Projects",
     "/app/project-realization/home":      "Home",
-    "/app/project-realization/analytics": "Analytics",
     "/app/project-realization/resources": "Resources",
+    "/app/project-realization/workflows": "Workflows",
 };
 
 export default function ProjectRealizationLayout() {
@@ -23,6 +26,8 @@ export default function ProjectRealizationLayout() {
 
     const token = localStorage.getItem("access_token");
     const user = JSON.parse(localStorage.getItem("user") || "null");
+    const selectedProject = JSON.parse(localStorage.getItem("selectedProject") || "null");
+    const isAdmin = selectedProject?.role_name === "ADMIN";
 
     if (!token || !user) {
         navigate("/login", { replace: true });
@@ -35,7 +40,8 @@ export default function ProjectRealizationLayout() {
     }
 
     const initials = `${user.name?.charAt(0) ?? ""}${user.last_name?.charAt(0) ?? ""}`.toUpperCase();
-    const pageTitle = pageTitles[location.pathname] ?? "Realizacija projekata";
+    const roleLabel = { ADMIN: "Admin", PROJECT_MANAGER: "Project Manager", TEAM_MEMBER: "Team Member" }[selectedProject?.role_name] ?? "";
+    const pageTitle = pageTitles[location.pathname] ?? "Project Realization";
 
     return (
         <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -63,6 +69,22 @@ export default function ProjectRealizationLayout() {
                             {label}
                         </NavLink>
                     ))}
+                    {isAdmin && adminNavItems.map(({ to, icon: Icon, label }) => (
+                        <NavLink
+                            key={to}
+                            to={to}
+                            className={({ isActive }) =>
+                                `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
+                                    isActive
+                                        ? "bg-gray-100 text-gray-900 font-medium"
+                                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                                }`
+                            }
+                        >
+                            <Icon size={15} />
+                            {label}
+                        </NavLink>
+                    ))}
                 </nav>
 
                 <div className="px-4 py-4 border-t border-gray-100">
@@ -72,7 +94,7 @@ export default function ProjectRealizationLayout() {
                         </div>
                         <div className="min-w-0">
                             <p className="text-xs font-medium text-gray-900 truncate">{user.name} {user.last_name}</p>
-                            <p className="text-xs text-gray-400 truncate">Project Manager</p>
+                            <p className="text-xs text-gray-400 truncate">{roleLabel}</p>
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ from models.task_workflow import TaskWorkflow
 from models.task_workflow_step import TaskWorkflowStep
 from schemas.task_workflow_schema import (
     CreateTaskWorkflowRequest,
+    UpdateTaskWorkflowRequest,
     TaskWorkflowResponse,
     WorkflowStepOrderedResponse,
     WorkflowWithOrderedStepsResponse,
@@ -63,9 +64,64 @@ class TaskWorkflowService:
         await self.repository.delete(workflow)
         return {"message": "Workflow deleted"}
 
-    # ── Project Realization method ─────────────────────────────────────────────
+    async def create_for_pr(self, data, user_id: str) -> WorkflowWithOrderedStepsResponse:
+        workflow = TaskWorkflow(name=data.name, created_by=user_id)
+        await self.repository.create(workflow)
 
-    def _order_steps(self, steps):
+        created_steps = []
+        for i, step_data in enumerate(data.steps):
+            step = TaskWorkflowStep(
+                task_workflow_id=workflow.task_workflow_id,
+                status_name=step_data.status_name,
+                is_first=(i == 0),
+                is_last=(i == len(data.steps) - 1),
+            )
+            await self.step_repository.create_and_flush(step)
+            created_steps.append(step)
+
+        for i in range(len(created_steps) - 1):
+            created_steps[i].next_step_id = created_steps[i + 1].step_id
+
+        await self.step_repository.commit()
+
+        workflow = await self.repository.get_by_id(workflow.task_workflow_id)
+        return self._build_ordered_response(workflow)
+
+    async def update_full(self, workflow_id: str, data: UpdateTaskWorkflowRequest) -> WorkflowWithOrderedStepsResponse:
+        workflow = await self.repository.get_by_id(workflow_id)
+        if workflow is None:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+
+        workflow.name = data.name
+
+        existing_steps = self._order_steps(workflow.steps)
+        for i, step in enumerate(existing_steps):
+            if i < len(data.steps):
+                step.status_name = data.steps[i].status_name
+
+        await self.step_repository.commit()
+
+        workflow = await self.repository.get_by_id(workflow_id)
+        return self._build_ordered_response(workflow)
+
+    def _build_ordered_response(self, workflow: TaskWorkflow) -> WorkflowWithOrderedStepsResponse:
+        steps = self._order_steps(workflow.steps)
+        return WorkflowWithOrderedStepsResponse(
+            task_workflow_id=workflow.task_workflow_id,
+            name=workflow.name,
+            steps=[
+                WorkflowStepOrderedResponse(
+                    step_id=s.step_id,
+                    status_name=s.status_name,
+                    is_first=s.is_first,
+                    is_last=s.is_last,
+                )
+                for s in steps
+            ],
+        )
+
+    @staticmethod
+    def _order_steps(steps):
         if not steps:
             return []
         step_map = {s.step_id: s for s in steps}
