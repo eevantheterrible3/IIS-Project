@@ -14,3 +14,4 @@ from .section_template import SectionTemplate
 from .document_section import DocumentSection
 from .document_version import DocumentVersion
 from .document_rating import DocumentRating
+from .llm_usage_log import LLMUsageLog

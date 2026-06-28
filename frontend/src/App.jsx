@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import AppLayout from "./layouts/AppLayout";
+import Dashboard from "./pages/app/Dashboard";
 import DocumentsList from "./pages/app/DocumentsList";
 import DocumentView from "./pages/app/DocumentView";
 import DocumentTypesList from "./pages/app/DocumentTypesList";
@@ -15,7 +16,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
 
                 <Route path="/app" element={<AppLayout />}>
-                    <Route index element={<Navigate to="/app/documents" replace />} />
+                    <Route index element={<Navigate to="/app/dashboard" replace />} />
+                    <Route path="dashboard" element={<Dashboard />} />
                     <Route path="documents" element={<DocumentsList />} />
                     <Route path="documents/:id" element={<DocumentView />} />
                     <Route path="document-types" element={<DocumentTypesList />} />
@@ -24,7 +26,7 @@ function App() {
                     <Route path="new-document" element={<NewDocument />} />
                 </Route>
 
-                <Route path="/" element={<Navigate to="/app/documents" replace />} />
+                <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
             </Routes>
         </BrowserRouter>
     );

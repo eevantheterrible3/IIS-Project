@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { FileText, Sparkles, Layers, LayoutTemplate, Zap, Plus } from "lucide-react";
+import { FileText, Sparkles, Layers, LayoutTemplate, Zap, Plus, LayoutDashboard } from "lucide-react";
 
 const navItems = [
+    { to: "/app/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/app/documents", icon: FileText, label: "Documents" },
     { to: "/app/new-document", icon: Sparkles, label: "New Document" },
     { to: "/app/document-types", icon: Layers, label: "Document Types" },

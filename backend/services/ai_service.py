@@ -1,4 +1,6 @@
 import os
+import time
+from dataclasses import dataclass
 from typing import List, Optional
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -19,16 +21,54 @@ class GeneratedDoc(BaseModel):
     )
 
 
+@dataclass
+class LLMUsage:
+    """Token usage + metadata captured from a single LLM call."""
+
+    model: str
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    latency_ms: int
+
+
 class AIDocumentService:
     def __init__(self):
         api_key = os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("GOOGLE_API_KEY environment variable is not set")
+        self.model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
         llm = ChatGoogleGenerativeAI(
-            model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            model=self.model_name,
             google_api_key=api_key,
         )
-        self.structured_llm = llm.with_structured_output(GeneratedDoc)
+        # include_raw=True so we keep the raw AIMessage (with usage_metadata)
+        # alongside the parsed structured output.
+        self.structured_llm = llm.with_structured_output(GeneratedDoc, include_raw=True)
+
+    def _extract_usage(self, raw, latency_ms: int) -> LLMUsage:
+        usage_meta = getattr(raw, "usage_metadata", None) or {}
+        prompt = int(usage_meta.get("input_tokens") or 0)
+        completion = int(usage_meta.get("output_tokens") or 0)
+        total = int(usage_meta.get("total_tokens") or (prompt + completion))
+        response_meta = getattr(raw, "response_metadata", None) or {}
+        model = response_meta.get("model_name") or self.model_name
+        return LLMUsage(
+            model=model,
+            prompt_tokens=prompt,
+            completion_tokens=completion,
+            total_tokens=total,
+            latency_ms=latency_ms,
+        )
+
+    async def _invoke(self, messages):
+        """Invoke the LLM, returning (parsed GeneratedDoc | None, LLMUsage)."""
+        start = time.perf_counter()
+        result = await self.structured_llm.ainvoke(messages)
+        latency_ms = int((time.perf_counter() - start) * 1000)
+        parsed = result.get("parsed") if isinstance(result, dict) else result
+        raw = result.get("raw") if isinstance(result, dict) else None
+        return parsed, self._extract_usage(raw, latency_ms)
 
     @staticmethod
     def _section_name(section, index: int) -> str:
@@ -99,22 +139,22 @@ class AIDocumentService:
         sections: list,
         user_prompt: str,
         document_type_system_prompt: Optional[str],
-    ) -> dict:
+    ) -> tuple[dict, LLMUsage]:
         messages = [
             SystemMessage(
                 content=self._build_system_prompt(sections, document_type_system_prompt)
             ),
             HumanMessage(content=user_prompt or "Generate the document."),
         ]
-        generated = await self.structured_llm.ainvoke(messages)
-        return self._map_back(sections, generated)
+        generated, usage = await self._invoke(messages)
+        return self._map_back(sections, generated), usage
 
     async def refine_document(
         self,
         sections: list,
         conversation: list,
         document_type_system_prompt: Optional[str],
-    ) -> dict:
+    ) -> tuple[dict, LLMUsage]:
         """conversation: ordered list of {role: 'user'|'assistant', text: str} held by the frontend
         for the current generation session (initial prompt, each generated draft, each refinement)."""
         messages = [
@@ -131,5 +171,5 @@ class AIDocumentService:
                 messages.append(AIMessage(content=text))
         if len(messages) == 1:
             messages.append(HumanMessage(content="Generate the document."))
-        generated = await self.structured_llm.ainvoke(messages)
-        return self._map_back(sections, generated)
+        generated, usage = await self._invoke(messages)
+        return self._map_back(sections, generated), usage

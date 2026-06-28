@@ -1,15 +1,19 @@
 import json
+import logging
 from pathlib import Path
 from typing import List
 
 from core.dependencies import get_current_user
+from core.pricing import estimate_cost
 from database import get_db
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from models.document_rating import DocumentRating
 from models.document_version import DocumentVersion
+from models.llm_usage_log import LLMUsageLog
 from models.user import User
 from repositories.document_rating_repository import DocumentRatingRepository
+from repositories.llm_usage_log_repository import LLMUsageLogRepository
 from repositories.document_repository import DocumentRepository
 from repositories.document_section_repository import DocumentSectionRepository
 from repositories.document_type_repository import DocumentTypeRepository
@@ -227,6 +231,32 @@ async def _apply_generated(section_repo, document_id: str, generated: dict):
     return await section_repo.get_by_document(document_id)
 
 
+async def _log_llm_usage(db, document, current_user, generation_type, usage):
+    """Persist LLM token usage. Never raise — a logging failure must not break generation."""
+    try:
+        log = LLMUsageLog(
+            document_id=document.document_id,
+            user_id=current_user.user_id,
+            document_type_id=document.document_type_id,
+            generation_type=generation_type,
+            model=usage.model,
+            prompt_tokens=usage.prompt_tokens,
+            completion_tokens=usage.completion_tokens,
+            total_tokens=usage.total_tokens,
+            estimated_cost=estimate_cost(
+                usage.model, usage.prompt_tokens, usage.completion_tokens
+            ),
+            latency_ms=usage.latency_ms,
+        )
+        await LLMUsageLogRepository(db).create(log)
+    except Exception:
+        logging.getLogger(__name__).warning(
+            "Failed to log LLM usage for document %s",
+            getattr(document, "document_id", None),
+            exc_info=True,
+        )
+
+
 @router.post(
     "/{document_id}/generate-sections", response_model=List[DocumentSectionResponse]
 )
@@ -247,7 +277,7 @@ async def generate_document_sections(
     doc_type = await DocumentTypeRepository(db).get_by_id(document.document_type_id)
     ai_service = _build_ai_service()
 
-    generated = await ai_service.generate_document(
+    generated, usage = await ai_service.generate_document(
         sections=sections,
         user_prompt=document.user_prompt or "",
         document_type_system_prompt=doc_type.system_prompt if doc_type else None,
@@ -255,6 +285,7 @@ async def generate_document_sections(
 
     document.status = "draft"
     updated = await _apply_generated(section_repo, document_id, generated)
+    await _log_llm_usage(db, document, current_user, "generate", usage)
     return _sections_response(updated)
 
 
@@ -279,13 +310,14 @@ async def refine_document_sections(
     doc_type = await DocumentTypeRepository(db).get_by_id(document.document_type_id)
     ai_service = _build_ai_service()
 
-    generated = await ai_service.refine_document(
+    generated, usage = await ai_service.refine_document(
         sections=sections,
         conversation=[turn.model_dump() for turn in request.history],
         document_type_system_prompt=doc_type.system_prompt if doc_type else None,
     )
 
     updated = await _apply_generated(section_repo, document_id, generated)
+    await _log_llm_usage(db, document, current_user, "refine", usage)
     return _sections_response(updated)
 
 
