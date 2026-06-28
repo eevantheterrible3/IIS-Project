@@ -2,6 +2,20 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authFetch } from "@/lib/api";
 
+async function exportPdf() {
+    const res = await authFetch("/project-realization/report/download");
+    if (!res.ok) { alert("Could not generate report."); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const now = new Date();
+    const date = `${String(now.getDate()).padStart(2, "0")}.${String(now.getMonth() + 1).padStart(2, "0")}.${now.getFullYear()}`;
+    a.href = url;
+    a.download = `Report_${date}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
 export default function Home() {
     const navigate = useNavigate();
     const [data, setData]       = useState(null);
@@ -40,9 +54,17 @@ export default function Home() {
         <div className="p-6 space-y-5">
 
             {/* Greeting */}
-            <h2 className="text-xl font-bold text-gray-900">
-                Welcome back, {user?.name ?? ""}
-            </h2>
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                    Welcome back, {user?.name ?? ""}
+                </h2>
+                <button
+                    onClick={exportPdf}
+                    className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                    Generate Report
+                </button>
+            </div>
 
             {/* Top row: stats left + distribution right */}
             <div className="grid grid-cols-2 gap-5">

@@ -61,7 +61,7 @@ export default function NewTask() {
         }
     }
 
-    async function handleSave() {
+    async function save() {
         if (!form.name.trim()) { setError("Task name is required."); return; }
         if (!form.workflowId)  { setError("Please select a workflow."); return; }
         if (!form.priority)    { setError("Priority is required."); return; }
@@ -343,7 +343,7 @@ export default function NewTask() {
                     Cancel
                 </button>
                 <button
-                    onClick={handleSave}
+                    onClick={save}
                     disabled={saving}
                     className="px-5 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-40 transition-colors"
                 >

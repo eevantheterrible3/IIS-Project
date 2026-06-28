@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from models.task_resource import TaskResource
 
@@ -38,6 +39,12 @@ class TaskResourceRepository:
                 TaskResource.reserved_from <= reserved_until,
                 TaskResource.reserved_until >= reserved_from,
             )
+        )
+        return result.scalars().all()
+
+    async def get_all_with_resource(self):
+        result = await self.db.execute(
+            select(TaskResource).options(selectinload(TaskResource.resource))
         )
         return result.scalars().all()
 

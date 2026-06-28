@@ -120,3 +120,36 @@ class HomeResponse(BaseModel):
     stats_late: int
     projects: list[HomeProjectItem]
     my_tasks: list[HomeMyTask]
+
+
+class ReportWorkflowStep(BaseModel):
+    step_name: str
+    task_count: int
+
+
+class ReportMember(BaseModel):
+    name: str
+    active_tasks: int
+    completed_tasks: int
+
+
+class ReportProjectItem(BaseModel):
+    name: str
+    task_total: int
+    task_completed: int
+    task_late: int
+    progress: int
+    deadline: str | None
+    manager_name: str | None
+
+
+class ReportResponse(BaseModel):
+    generated_at: str
+    stats_projects: int
+    stats_total_tasks: int
+    stats_completed: int
+    stats_active: int
+    stats_late: int
+    projects: list[ReportProjectItem]
+    workflow_steps: list[ReportWorkflowStep]
+    members: list[ReportMember]
