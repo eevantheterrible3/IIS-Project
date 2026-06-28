@@ -1,13 +1,18 @@
 from datetime import datetime, timezone
-from typing import Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.dependencies import get_current_user
 from database import get_db
 from models.user import User
-from schemas.analytics_schema import DashboardResponse
+from schemas.analytics_schema import (
+    DashboardResponse,
+    GenerateReportRequest,
+    ReportDetail,
+    ReportSummary,
+)
 from services.analytics_service import AnalyticsService
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
@@ -41,3 +46,36 @@ async def get_dashboard(
         generation_type=generation_type,
         user_id=user_id,
     )
+
+
+@router.post("/reports", response_model=ReportDetail)
+async def create_report(
+    payload: GenerateReportRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Run the PL/pgSQL procedure to build and persist a usage report."""
+    service = AnalyticsService(db)
+    return await service.create_report(
+        start=_naive_utc(payload.start), end=_naive_utc(payload.end)
+    )
+
+
+@router.get("/reports", response_model=List[ReportSummary])
+async def list_reports(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await AnalyticsService(db).list_reports()
+
+
+@router.get("/reports/{report_id}", response_model=ReportDetail)
+async def get_report(
+    report_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    report = await AnalyticsService(db).get_report(report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return report
