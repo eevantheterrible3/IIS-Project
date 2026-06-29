@@ -21,3 +21,5 @@ class TaskStatusHistory(Base):
     task = relationship("Task", back_populates="status_history")
     subtask = relationship("Subtask", back_populates="status_history")
     changed_by = relationship("User", foreign_keys=[changed_by_user_id])
+    old_step = relationship("TaskWorkflowStep", foreign_keys=[old_step_id])
+    new_step = relationship("TaskWorkflowStep", foreign_keys=[new_step_id])

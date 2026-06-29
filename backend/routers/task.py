@@ -121,6 +121,25 @@ async def set_subtask_status(
     return service.build_detail(task, project, uid)
 
 
+@router.put("/{task_id}/edit", response_model=TaskFullDetailResponse)
+async def edit_task(
+    task_id: str,
+    data: UpdateTaskRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Edit task fields (project manager only)."""
+    uid = current_user.user_id
+    task, project = await _load_task_and_project(task_id, db)
+    service = TaskService(TaskRepository(db))
+    if not service._is_manager(project, uid):
+        raise HTTPException(status_code=403, detail="Only the project manager can edit tasks.")
+    await service.update(task_id, data)
+    db.expire_all()
+    task, project = await _load_task_and_project(task_id, db)
+    return service.build_detail(task, project, uid)
+
+
 @router.post("/{task_id}/subtasks", response_model=TaskFullDetailResponse, status_code=201)
 async def add_subtask(
     task_id: str,

@@ -29,3 +29,12 @@ class TaskResourceResponse(BaseModel):
     status: TaskResourceStatus
 
     model_config = {"from_attributes": True}
+
+
+class TaskResourceDetailResponse(BaseModel):
+    resource_id: str
+    name: str
+    resource_type: str | None
+    quantity: int
+    reserved_from: str | None
+    reserved_until: str | None

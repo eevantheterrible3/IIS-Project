@@ -14,6 +14,8 @@ from schemas.task_schema import (
     TaskSubtaskResponse,
     UpdateTaskRequest,
 )
+from schemas.task_resource_schema import TaskResourceDetailResponse
+from schemas.task_status_history_schema import TaskHistoryDetailResponse
 from services.task_workflow_service import TaskWorkflowService
 
 
@@ -130,6 +132,35 @@ class TaskService:
         done = sum(1 for s in task.subtasks if s.current_status and s.current_status.value == "done")
         total = len(task.subtasks)
 
+        resources = [
+            TaskResourceDetailResponse(
+                resource_id=tr.resource_id,
+                name=tr.resource.name if tr.resource else tr.resource_id,
+                resource_type=tr.resource.resource_type if tr.resource else None,
+                quantity=tr.quantity or 1,
+                reserved_from=tr.reserved_from.strftime("%d.%m.%Y") if tr.reserved_from else None,
+                reserved_until=tr.reserved_until.strftime("%d.%m.%Y") if tr.reserved_until else None,
+            )
+            for tr in task.resources
+        ]
+
+        history = sorted(
+            [
+                TaskHistoryDetailResponse(
+                    old_step=h.old_step.status_name if h.old_step else None,
+                    new_step=h.new_step.status_name if h.new_step else "—",
+                    changed_by=(
+                        f"{h.changed_by.name} {h.changed_by.last_name}"
+                        if h.changed_by else "—"
+                    ),
+                    changed_at=h.changed_at.strftime("%Y-%m-%dT%H:%M:%SZ") if h.changed_at else "",
+                )
+                for h in task.status_history
+            ],
+            key=lambda x: x.changed_at,
+            reverse=True,
+        )
+
         return TaskFullDetailResponse(
             task_id=task.task_id,
             project_id=task.project_id,
@@ -161,6 +192,8 @@ class TaskService:
             next_step_id=next_step.step_id if next_step else None,
             next_step_name=next_step.status_name if next_step else None,
             subtasks=subtasks,
+            resources=resources,
+            history=history,
             progress_done=done,
             progress_total=total,
             progress_percent=round(done / total * 100) if total else 0,
@@ -188,6 +221,13 @@ class TaskService:
         task.current_step_id = next_step.step_id
         await self.repository.update(task)
         await self.repository.add_status_history(task.task_id, old_step_id, next_step.step_id, user_id)
+
+        if next_step.is_last:
+            from models.subtask import SubtaskStatus
+            for s in task.subtasks:
+                if s.current_status != SubtaskStatus.done:
+                    s.current_status = SubtaskStatus.done
+            await self.repository.db.commit()
 
     async def create_for_pr(self, project_id: str, data: CreateTaskWithResourcesRequest, first_step_id: str):
         deadline = datetime.strptime(data.deadline, "%Y-%m-%d") if data.deadline else None

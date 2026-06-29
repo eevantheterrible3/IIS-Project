@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, Plus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Plus, X, Pencil } from "lucide-react";
 import { authFetch } from "@/lib/api";
 
 const PRIORITY_CLS = {
@@ -28,6 +28,11 @@ export default function TaskDetail() {
     const [showAdd, setShowAdd]       = useState(false);
     const [members, setMembers]       = useState([]);
     const [newSub, setNewSub]         = useState({ name: "", deadline: "", assigned_user_id: "" });
+
+    // edit task modal
+    const [showEdit, setShowEdit]     = useState(false);
+    const [editData, setEditData]     = useState({});
+    const [editBusy, setEditBusy]     = useState(false);
 
     useEffect(() => { fetchTask(); }, [task_id]);
 
@@ -57,13 +62,50 @@ export default function TaskDetail() {
         if (res.ok) setTask(await res.json());
     }
 
-    async function openAdd() {
+    async function loadMembers() {
         if (members.length === 0) {
-            const r = await authFetch("/project-realization/users");
+            const r = await authFetch(`/project-realization/projects/${project_id}/members`);
             if (r.ok) setMembers(await r.json());
         }
+    }
+
+    async function openAdd() {
+        await loadMembers();
         setNewSub({ name: "", deadline: "", assigned_user_id: "" });
         setShowAdd(true);
+    }
+
+    async function openEdit() {
+        await loadMembers();
+        setEditData({
+            name: task.name,
+            description: task.description || "",
+            priority: task.priority || "",
+            deadline: task.deadline
+                ? task.deadline.split(".").reverse().join("-")
+                : "",
+            assigned_user_id: task.assigned_user_id || "",
+        });
+        setShowEdit(true);
+    }
+
+    async function confirmEdit() {
+        setEditBusy(true);
+        const body = {
+            name: editData.name || null,
+            description: editData.description || null,
+            priority: editData.priority || null,
+            deadline: editData.deadline ? new Date(editData.deadline).toISOString() : null,
+            assigned_user_id: editData.assigned_user_id || null,
+        };
+        const res = await authFetch(`/tasks/${task_id}/edit`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+        if (res.ok) { setTask(await res.json()); setShowEdit(false); }
+        else alert("Something went wrong.");
+        setEditBusy(false);
     }
 
     async function confirmAdd() {
@@ -127,6 +169,14 @@ export default function TaskDetail() {
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-medium text-red-600 bg-red-50 border border-red-200">
                         Late
                     </span>
+                )}
+                {task.is_manager && (
+                    <button
+                        onClick={openEdit}
+                        className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+                    >
+                        <Pencil size={13} /> Edit
+                    </button>
                 )}
             </div>
 
@@ -223,6 +273,37 @@ export default function TaskDetail() {
                 </div>
             </div>
 
+            {/* Resources */}
+            {task.resources && task.resources.length > 0 && (
+                <div>
+                    <h3 className="text-base font-bold text-gray-900 mb-3">Resources</h3>
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wide">
+                                    <th className="text-left px-5 py-3 font-medium">Name</th>
+                                    <th className="text-left px-5 py-3 font-medium">Type</th>
+                                    <th className="text-left px-5 py-3 font-medium">Quantity</th>
+                                    <th className="text-left px-5 py-3 font-medium">From</th>
+                                    <th className="text-left px-5 py-3 font-medium">Until</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {task.resources.map(r => (
+                                    <tr key={r.resource_id} className="border-b border-gray-50">
+                                        <td className="px-5 py-3.5 font-medium text-gray-900">{r.name}</td>
+                                        <td className="px-5 py-3.5 text-gray-500">{r.resource_type ?? "—"}</td>
+                                        <td className="px-5 py-3.5 text-gray-500">{r.quantity}</td>
+                                        <td className="px-5 py-3.5 text-gray-500">{r.reserved_from ?? "—"}</td>
+                                        <td className="px-5 py-3.5 text-gray-500">{r.reserved_until ?? "—"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             {/* Subtasks (progress lives here — it measures subtask completion) */}
             <div>
                 <div className="flex items-center justify-between mb-3">
@@ -299,6 +380,42 @@ export default function TaskDetail() {
                 </div>
             </div>
 
+            {/* Status history */}
+            {task.history && task.history.length > 0 && (
+                <div>
+                    <h3 className="text-base font-bold text-gray-900 mb-3">Status History</h3>
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-gray-100 text-gray-500 text-xs uppercase tracking-wide">
+                                    <th className="text-left px-5 py-3 font-medium">From</th>
+                                    <th className="text-left px-5 py-3 font-medium">To</th>
+                                    <th className="text-left px-5 py-3 font-medium">Changed by</th>
+                                    <th className="text-left px-5 py-3 font-medium">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {task.history.map((h, i) => (
+                                    <tr key={i} className="border-b border-gray-50">
+                                        <td className="px-5 py-3.5 text-gray-400">{h.old_step ?? "—"}</td>
+                                        <td className="px-5 py-3.5 font-medium text-gray-900">{h.new_step}</td>
+                                        <td className="px-5 py-3.5 text-gray-500">{h.changed_by}</td>
+                                        <td className="px-5 py-3.5 text-gray-400">
+                                            {h.changed_at
+                                                ? new Date(h.changed_at).toLocaleString("sr-Latn", {
+                                                    day: "2-digit", month: "2-digit", year: "numeric",
+                                                    hour: "2-digit", minute: "2-digit",
+                                                })
+                                                : "—"}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             {/* Add subtask modal */}
             {showAdd && (
                 <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
@@ -354,6 +471,88 @@ export default function TaskDetail() {
                                 className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-700 transition-colors"
                             >
                                 Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Edit task modal */}
+            {showEdit && (
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-base font-semibold text-gray-900">Edit task</h3>
+                            <button onClick={() => setShowEdit(false)} className="text-gray-400 hover:text-gray-600">
+                                <X size={16} />
+                            </button>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                            <input
+                                value={editData.name}
+                                onChange={e => setEditData(f => ({ ...f, name: e.target.value }))}
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                            <textarea
+                                value={editData.description}
+                                onChange={e => setEditData(f => ({ ...f, description: e.target.value }))}
+                                rows={3}
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Priority</label>
+                                <select
+                                    value={editData.priority}
+                                    onChange={e => setEditData(f => ({ ...f, priority: e.target.value }))}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-300"
+                                >
+                                    <option value="">None</option>
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Deadline</label>
+                                <input
+                                    type="date"
+                                    value={editData.deadline}
+                                    onChange={e => setEditData(f => ({ ...f, deadline: e.target.value }))}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Assignee</label>
+                            <select
+                                value={editData.assigned_user_id}
+                                onChange={e => setEditData(f => ({ ...f, assigned_user_id: e.target.value }))}
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-gray-300"
+                            >
+                                <option value="">Unassigned</option>
+                                {members.map(u => (
+                                    <option key={u.user_id} value={u.user_id}>{u.name} {u.last_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex justify-end gap-2 pt-1">
+                            <button
+                                onClick={() => setShowEdit(false)}
+                                className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmEdit}
+                                disabled={editBusy}
+                                className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                            >
+                                Save
                             </button>
                         </div>
                     </div>

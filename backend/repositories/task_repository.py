@@ -7,6 +7,7 @@ from models.task import Task
 from models.task_resource import TaskResource
 from models.task_status_history import TaskStatusHistory
 from models.task_workflow import TaskWorkflow
+from models.user import User
 
 
 class TaskRepository:
@@ -65,6 +66,10 @@ class TaskRepository:
                 selectinload(Task.project),
                 selectinload(Task.subtasks).selectinload(Subtask.assigned_user),
                 selectinload(Task.workflow).selectinload(TaskWorkflow.steps),
+                selectinload(Task.resources).selectinload(TaskResource.resource),
+                selectinload(Task.status_history).selectinload(TaskStatusHistory.changed_by),
+                selectinload(Task.status_history).selectinload(TaskStatusHistory.old_step),
+                selectinload(Task.status_history).selectinload(TaskStatusHistory.new_step),
             )
         )
         return result.scalar_one_or_none()

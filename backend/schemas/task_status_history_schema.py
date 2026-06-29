@@ -21,3 +21,10 @@ class TaskStatusHistoryResponse(BaseModel):
     changed_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class TaskHistoryDetailResponse(BaseModel):
+    old_step: str | None
+    new_step: str
+    changed_by: str
+    changed_at: str

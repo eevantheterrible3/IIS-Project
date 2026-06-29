@@ -3,6 +3,8 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from models.task import TaskPriority
+from schemas.task_status_history_schema import TaskHistoryDetailResponse
+from schemas.task_resource_schema import TaskResourceDetailResponse
 
 
 class CreateTaskRequest(BaseModel):
@@ -110,6 +112,8 @@ class TaskFullDetailResponse(BaseModel):
     next_step_id: str | None
     next_step_name: str | None
     subtasks: list[TaskSubtaskResponse]
+    resources: list[TaskResourceDetailResponse]
+    history: list[TaskHistoryDetailResponse]
     progress_done: int
     progress_total: int
     progress_percent: int

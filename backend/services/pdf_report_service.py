@@ -16,6 +16,7 @@ def generate_report_pdf(
     res_rows: list[dict],
     priority_counts: dict[str, int],
     unassigned_rows: list[dict],
+    step_counts: dict[str, int] | None = None,
 ) -> bytes:
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
@@ -112,6 +113,16 @@ def generate_report_pdf(
         c.setFillColor(HexColor("#9ca3af"))
         c.drawString(50, y, "No resources assigned to tasks.")
         y -= 15
+
+    # Tasks by workflow status
+    if step_counts:
+        y = draw_section("TASKS BY WORKFLOW STATUS", y)
+        y = draw_row([(50, "Workflow Step"), (350, "Tasks"), (430, "% of total")], y, bold=True, gray=True)
+        for step_name, cnt in sorted(step_counts.items(), key=lambda x: -x[1]):
+            pct = round(cnt / (stats_total or 1) * 100)
+            y = draw_row([(50, step_name[:40]), (350, cnt), (430, f"{pct}%")], y)
+            if y < 80:
+                c.showPage(); y = H - 50
 
     # Priority
     y = draw_section("TASKS BY PRIORITY", y)

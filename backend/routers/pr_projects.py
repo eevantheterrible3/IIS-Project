@@ -39,6 +39,22 @@ async def get_project_detail(
     return await service.get_detail_for_pr(project_id, tasks, current_user.user_id)
 
 
+@router.get("/{project_id}/members")
+async def get_members(
+    project_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    project = await ProjectRepository(db).get_by_id_with_members(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return [
+        {"user_id": w.user.user_id, "name": w.user.name, "last_name": w.user.last_name}
+        for w in project.works
+        if w.user
+    ]
+
+
 @router.post("/{project_id}/members", status_code=201)
 async def add_member(
     project_id: str,

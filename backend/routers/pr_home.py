@@ -257,9 +257,17 @@ async def download_report(
     res_rows = sorted(resource_map.values(), key=lambda x: -x["count"])
 
     priority_counts: dict[str, int] = {}
+    step_counts: dict[str, int] = {"Not started": 0, "In progress": 0, "Completed": 0}
     for t in tasks:
         key = t.priority.value if t.priority else "none"
         priority_counts[key] = priority_counts.get(key, 0) + 1
+        if t.current_step:
+            if t.current_step.is_last:
+                step_counts["Completed"] += 1
+            elif t.current_step.is_first:
+                step_counts["Not started"] += 1
+            else:
+                step_counts["In progress"] += 1
 
     project_name_map = {p.project_id: p.name for p in projects}
     unassigned_rows = sorted(
@@ -279,6 +287,7 @@ async def download_report(
         res_rows=res_rows,
         priority_counts=priority_counts,
         unassigned_rows=unassigned_rows,
+        step_counts=step_counts,
     )
     filename = f"Report_{now.strftime('%d.%m.%Y')}.pdf"
     return Response(
