@@ -1,7 +1,6 @@
+from models.section_template import SectionTemplate
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from models.section_template import SectionTemplate
 
 
 class SectionTemplateRepository:
@@ -16,9 +15,17 @@ class SectionTemplateRepository:
         )
         return result.scalars().all()
 
+    async def get_all(self):
+        result = await self.db.execute(
+            select(SectionTemplate).order_by(SectionTemplate.order_index)
+        )
+        return result.scalars().all()
+
     async def get_by_id(self, section_template_id: int):
         result = await self.db.execute(
-            select(SectionTemplate).where(SectionTemplate.section_template_id == section_template_id)
+            select(SectionTemplate).where(
+                SectionTemplate.section_template_id == section_template_id
+            )
         )
         return result.scalar_one_or_none()
 

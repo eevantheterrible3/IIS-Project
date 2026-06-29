@@ -1,18 +1,11 @@
 import uuid
-from sqlalchemy import Column, String, Integer, Numeric, DateTime, ForeignKey
-from sqlalchemy.sql import func
+
 from database import Base
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy.sql import func
 
 
 class LLMUsageLog(Base):
-    """One row per LLM call (generate or refine) for a document.
-
-    Foreign keys use ON DELETE SET NULL and are nullable so that usage history
-    survives even if the related document / user / document type is removed.
-    No ORM relationships are declared on purpose; analytics queries join
-    explicitly, which keeps this model self-contained.
-    """
-
     __tablename__ = "llm_usage_logs"
 
     llm_usage_log_id = Column(

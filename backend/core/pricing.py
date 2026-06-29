@@ -1,11 +1,3 @@
-"""Estimated cost calculation for LLM usage.
-
-PRICING BELOW IS A PLACEHOLDER — confirm the exact Google Gemini pricing for the
-models you actually use and update these values (or override via the
-LLM_MODEL_PRICING env var). Values are USD per 1,000,000 tokens as
-(input_per_1M, output_per_1M).
-"""
-
 import json
 import os
 from decimal import Decimal
@@ -19,15 +11,6 @@ MODEL_PRICING = {
     "gemini-1.5-flash": (0.075, 0.30),
     "gemini-1.5-pro": (1.25, 5.00),
 }
-
-# Optional override/extension: LLM_MODEL_PRICING='{"gemini-2.5-flash": [0.3, 2.5]}'
-_env_pricing = os.getenv("LLM_MODEL_PRICING")
-if _env_pricing:
-    try:
-        for _model, _rates in json.loads(_env_pricing).items():
-            MODEL_PRICING[_model] = (float(_rates[0]), float(_rates[1]))
-    except (ValueError, TypeError, IndexError, KeyError):
-        pass
 
 
 def _rates(model: str) -> Optional[Tuple[float, float]]:
