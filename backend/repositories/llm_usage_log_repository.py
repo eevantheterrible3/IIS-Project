@@ -150,9 +150,6 @@ class LLMUsageLogRepository:
             **filters,
         )
 
-    async def by_model(self, **filters) -> list:
-        return await self._breakdown(LLMUsageLog.model, None, None, **filters)
-
     async def by_user(self, **filters) -> list:
         return await self._breakdown(
             func.concat(User.name, " ", User.last_name),

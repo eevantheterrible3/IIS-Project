@@ -3,8 +3,6 @@ import {
     ResponsiveContainer,
     AreaChart,
     Area,
-    BarChart,
-    Bar,
     PieChart,
     Pie,
     Cell,
@@ -262,20 +260,6 @@ export default function Dashboard() {
                             </div>
                         </ChartCard>
                     </div>
-
-                    <ChartCard title="Tokeni po modelu">
-                        <div className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={data.by_model} layout="vertical" margin={{ top: 5, right: 20, left: 20, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                                    <XAxis type="number" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                                    <YAxis type="category" dataKey="label" width={140} tick={{ fontSize: 11, fill: "#64748b" }} />
-                                    <Tooltip formatter={(v) => fmtInt(v)} />
-                                    <Bar dataKey="total_tokens" name="Tokeni" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={22} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </ChartCard>
 
                     {/* Recent generations table */}
                     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

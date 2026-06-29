@@ -32,7 +32,6 @@ class AnalyticsService:
             "summary": await self.repo.summary(**filters),
             "time_series": await self.repo.time_series(**filters),
             "by_document_type": await self.repo.by_document_type(**filters),
-            "by_model": await self.repo.by_model(**filters),
             "by_user": await self.repo.by_user(**filters),
             "recent": await self.repo.recent(limit=recent_limit, **filters),
         }

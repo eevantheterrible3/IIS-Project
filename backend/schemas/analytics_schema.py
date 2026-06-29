@@ -49,7 +49,6 @@ class DashboardResponse(BaseModel):
     summary: UsageSummary
     time_series: List[TimeSeriesPoint]
     by_document_type: List[BreakdownItem]
-    by_model: List[BreakdownItem]
     by_user: List[BreakdownItem]
     recent: List[RecentGeneration]
 

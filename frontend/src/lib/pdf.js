@@ -20,7 +20,7 @@ export async function exportDashboardPdf(element, data) {
 
     // Header
     doc.setFontSize(16);
-    doc.text("Analitika potrošnje LLM-a", margin, 14);
+    doc.text("Analitika potrosnje LLM-a", margin, 14);
     doc.setFontSize(9);
     doc.setTextColor(120);
     doc.text(`Generisano: ${new Date().toLocaleString()}`, margin, 20);
@@ -67,8 +67,8 @@ export async function exportDashboardPdf(element, data) {
             ["Ukupno tokena", fmtInt(s.total_tokens)],
             ["Ulazni tokeni", fmtInt(s.prompt_tokens)],
             ["Izlazni tokeni", fmtInt(s.completion_tokens)],
-            ["Procenjeni trošak", fmtCost(s.estimated_cost)],
-            ["Prosečna latencija (ms)", fmtInt(Math.round(s.avg_latency_ms))],
+            ["Procenjeni trosak", fmtCost(s.estimated_cost)],
+            ["Prosecna latencija (ms)", fmtInt(Math.round(s.avg_latency_ms))],
             ["Dokumenata", fmtInt(s.unique_documents)],
         ],
         styles: { fontSize: 9 },
@@ -80,7 +80,7 @@ export async function exportDashboardPdf(element, data) {
     if (byType.length) {
         autoTable(doc, {
             startY: doc.lastAutoTable.finalY + 8,
-            head: [["Tip dokumenta", "Generisanja", "Tokeni", "Trošak"]],
+            head: [["Tip dokumenta", "Generisanja", "Tokeni", "Trosak"]],
             body: byType.map((b) => [
                 b.label,
                 fmtInt(b.generations),
@@ -97,7 +97,7 @@ export async function exportDashboardPdf(element, data) {
     if (recent.length) {
         autoTable(doc, {
             startY: doc.lastAutoTable.finalY + 8,
-            head: [["Datum", "Tip", "Model", "Dokument", "Tokeni", "Trošak"]],
+            head: [["Datum", "Tip", "Model", "Dokument", "Tokeni", "Trosak"]],
             body: recent.map((r) => [
                 r.created_at ? new Date(r.created_at).toLocaleString() : "—",
                 r.generation_type,
