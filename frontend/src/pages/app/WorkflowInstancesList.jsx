@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { authFetch } from "@/lib/api";
+import { authFetch, API_BASE } from "@/lib/api";
 import "./CrudPages.css";
 
 const emptyForm = { document_id: "", workflow_id: "", designated_user_id: "", note: "" };
@@ -123,7 +123,17 @@ export default function WorkflowInstancesList() {
                     <h1>Document Preparation</h1>
                     <p>Track the progress of preparing each document through its workflow</p>
                 </div>
-                <button className="crud-add-button" onClick={openCreate}>+ Start preparation</button>
+                <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                        className="crud-add-button"
+                        style={{ background: "#4F46E5" }}
+                        onClick={() => {
+                            const token = localStorage.getItem("access_token");
+                            window.open(`${API_BASE}/reports/workflows?token=${token}`, "_blank");
+                        }}
+                    >PDF Report</button>
+                    <button className="crud-add-button" onClick={openCreate}>+ Start preparation</button>
+                </div>
             </div>
 
             {instances.length === 0 && (

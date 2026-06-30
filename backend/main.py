@@ -16,6 +16,7 @@ from routers.conditions import router as conditions_router
 from routers.workflow_instance_steps import router as workflow_instance_steps_router
 from routers.activities import router as activities_router
 from routers.comments import router as comments_router
+from routers.reports import router as reports_router
 
 app = FastAPI(title="IIS API")
 app.include_router(auth_router)
@@ -33,6 +34,7 @@ app.include_router(conditions_router)
 app.include_router(workflow_instance_steps_router)
 app.include_router(activities_router)
 app.include_router(comments_router)
+app.include_router(reports_router)
 
 app.add_middleware(
     CORSMiddleware,
