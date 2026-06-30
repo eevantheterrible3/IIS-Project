@@ -43,8 +43,8 @@ class WorkflowInstanceStepService:
         step = await self.repository.get_by_id(instance_step_id)
         if step is None:
             raise HTTPException(status_code=404, detail="Workflow instance step not found")
-        if (self.instance.current_step == self.action):
-            raise HTTPException(status_code=404, detail="You can only update the progress in current step.")
+        if step.instance.current_step_id != step.action_id:
+            raise HTTPException(status_code=400, detail="You can only edit current step")
         old_status = step.status
         if request.status == "completed" and old_status != "completed":
             await self._check_role_condition(step, author_id)

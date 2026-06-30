@@ -1,9 +1,7 @@
-from sqlalchemy import select, and_
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from models.workflow_instance import WorkflowInstance
 from models.workflow_instance_step import WorkflowInstanceStep
-from models.workflow_has_action import WorkflowHasAction
 
 
 class WorkflowInstanceStepRepository:
@@ -13,18 +11,12 @@ class WorkflowInstanceStepRepository:
     async def get_by_instance(self, instance_id: str):
         result = await self.db.execute(
             select(WorkflowInstanceStep)
-            .join(WorkflowInstance, WorkflowInstanceStep.instance_id == WorkflowInstance.instance_id)
-            .outerjoin(WorkflowHasAction, and_(
-                WorkflowHasAction.workflow_id == WorkflowInstance.workflow_id,
-                WorkflowHasAction.action_id == WorkflowInstanceStep.action_id,
-            ))
             .where(WorkflowInstanceStep.instance_id == instance_id)
             .options(
                 selectinload(WorkflowInstanceStep.action),
                 selectinload(WorkflowInstanceStep.assigned_user),
-                
             )
-            .order_by(WorkflowHasAction.step_order)
+            .order_by(WorkflowInstanceStep.created_at)
         )
         return result.scalars().all()
 
